@@ -26,10 +26,9 @@ fn build_exe(b: *Builder, name: [] const u8) *std.build.LibExeObjStep {
 }
 
 pub fn build(b: *Builder) void {
-
-
     const exe_pub = build_exe(b, "pub");
     const exe_sub = build_exe(b, "sub");
+    const exe_main = build_exe(b, "main");
 
     // const exe2 = b.addExecutable("sub", "src/sub.zig");
     // exe2.setBuildMode(mode);
