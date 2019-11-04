@@ -52,6 +52,10 @@ const Socket = struct {
         };
     }
 
+    pub fn deinit(self: *Socket) void {
+
+    }
+
     pub fn connect(self: *Socket, endpoint: [] const u8) void {
         var c_endpoint = direct_allocator.alloc(u8, endpoint.len + 1) catch unreachable;
         @memcpy(c_endpoint.ptr, endpoint.ptr, endpoint.len);
@@ -60,8 +64,16 @@ const Socket = struct {
         _ = c.zmq_connect(self.socket, c_endpoint.ptr);
     }
 
-    pub fn send(self: *Socket, mesage: *Message) void {
-        _ = c.zmq_msg_send(&mesage.msg, self.socket, 0);
+    pub fn bind(self: *Socket, endpoint: [] const u8) void {
+        var c_endpoint = direct_allocator.alloc(u8, endpoint.len + 1) catch unreachable;
+        @memcpy(c_endpoint.ptr, endpoint.ptr, endpoint.len);
+        c_endpoint[endpoint.len] = 0;
+
+        _ = c.zmq_bind(self.socket, c_endpoint.ptr);
+    }
+
+    pub fn send(self: *Socket, message: *Message) void {
+        _ = c.zmq_msg_send(&message.msg, self.socket, 0);
     }
 
     pub fn recv(self: *Socket, message: *Message) void {
