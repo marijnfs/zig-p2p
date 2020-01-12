@@ -32,7 +32,7 @@ const Message = struct {
 
     pub fn data(self: *Message) []u8 {
         var ptr = c.zmq_msg_data(&self.msg);
-        var zig_ptr = hardCast([*]const u8, @typeOf(ptr), ptr);
+        var zig_ptr = hardCast([*]const u8, @TypeOf(ptr), ptr);
         var len = c.zmq_msg_size(&self.msg);
         var alloc_data = direct_allocator.alloc(u8, len) catch unreachable;
         @memcpy(alloc_data.ptr, zig_ptr, len);
@@ -84,31 +84,31 @@ const Socket = struct {
 
 
 pub fn main() anyerror!void {
-    std.debug.warn("All your base are belong to us.\n");
+    std.debug.warn("All your base are belong to us.\n", .{});
     var context = c.zmq_ctx_new();
 
     var test_socket = Socket.init(context, c.ZMQ_REQ);
-    std.debug.warn("All your base are belong to us.\n");
+    std.debug.warn("All your base are belong to us.\n", .{});
     test_socket.connect("ipc:///tmp/test");
 
 
-    std.debug.warn("start while");
+    std.debug.warn("start while", .{});
 
     var counter : u64 = 0;
     var data = try std.heap.direct_allocator.alloc(u8, 1024);
     while (true) {
         if (counter % 10000 == 0)
-            std.debug.warn("bla\n");
+            std.debug.warn("bla\n", .{});
 
         var msg = Message.init("Some msg");
         test_socket.send(&msg);
         test_socket.recv(&msg);
         var recv_data = msg.data();
-        std.debug.warn("{}", recv_data);
+        std.debug.warn("{}", .{recv_data});
 
         counter += 1;
 
     }
 
-    std.debug.warn("All your base are belong to us.\n");
+    std.debug.warn("All your base are belong to us.\n", .{});
 }

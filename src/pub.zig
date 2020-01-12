@@ -8,17 +8,17 @@ const c = @cImport({
 
 
 pub fn main() anyerror!void {
-    std.debug.warn("All your base are belong to us.\n");
+    std.debug.warn("All your base are belong to us.\n", .{});
     var context = c.zmq_ctx_new();
 
-    std.debug.warn("All your base are belong to us.\n");
+    std.debug.warn("All your base are belong to us.\n", .{});
 
     var socket = c.zmq_socket(context, c.ZMQ_REP);
 
-    const endpoint = c"ipc:///tmp/test";
+    const endpoint = "ipc:///tmp/test";
     var responder = c.zmq_bind(socket, endpoint);
 
-    std.debug.warn("start while");
+    std.debug.warn("start while", .{});
 
     while (true) {
         var msg : c.zmq_msg_t = undefined;
@@ -32,5 +32,5 @@ pub fn main() anyerror!void {
 
     }
 
-    std.debug.warn("All your base are belong to us.\n");
+    std.debug.warn("All your base are belong to us.\n", .{});
 }
