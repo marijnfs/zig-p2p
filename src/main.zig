@@ -5,9 +5,58 @@ const c = @cImport({
     @cInclude("monocypher.h");
 });
 
+const mem = std.mem;
+const Allocator = mem.Allocator;
 
+const baseSize = 1 << 8; //256 bytes
+const Archive = struct {
+    allocator: *Allocator,
+    buffer: ?[]u8,
+
+    size: u64,
+    index: u64,
+
+    pub fn new(allocator: *Allocator) Archive {
+        return Archive{ .allocator = allocator, .buffer = null, .size = 0, .index = 0 };
+    }
+
+    pub fn reserve(self: *Archive, size: u64) !void {
+        if (self.size == 0) {
+            self.buffer = try self.allocator.alloc(u8, baseSize);
+            self.size = baseSize;
+        }
+
+        while (self.index + size > self.size) {
+            self.size = self.size << 1;
+            self.buffer = try self.allocator.realloc(self.buffer.?, self.size);
+        }
+    }
+
+    pub fn output(self: *Archive, value: var) !void {
+        const valueSize = @sizeOf(@TypeOf(value));
+        try self.reserve(valueSize);
+        std.mem.copy(u8, self.buffer.?, mem.asBytes(&value));
+        self.index += valueSize;
+    }
+
+
+    pub fn serialize(self: *Archive, value: var) !void {
+        const T = @TypeOf(value);
+        switch (@typeInfo(T)) {
+            .Int => {
+                try self.output(value);
+            },
+            else => @compileError("Unable to format type '" ++ @typeName(T) ++ "'"),
+        }
+    }
+};
 
 pub fn main() anyerror!void {
+
+    var archive = Archive.new(std.heap.direct_allocator);
+    var abc: i64 = 4;
+    try archive.serialize(abc);
+
     std.debug.warn("All your base are belong to us.\n", .{});
     var context = c.zmq_ctx_new();
 

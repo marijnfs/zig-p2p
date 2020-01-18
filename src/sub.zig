@@ -10,10 +10,6 @@ const c = @cImport({
     @cInclude("monocypher.h");
 });
 
-//dirty cast to deal with c_void*! etc.
-fn hardCast(comptime T: type, comptime ptrT: type, ptr: ptrT) T {
-    return @intToPtr(T, @ptrToInt(ptr));
-}
 
 const Message = struct {
     msg: c.zmq_msg_t,
@@ -32,7 +28,7 @@ const Message = struct {
 
     pub fn data(self: *Message) []u8 {
         var ptr = c.zmq_msg_data(&self.msg);
-        var zig_ptr = hardCast([*]const u8, @TypeOf(ptr), ptr);
+        var zig_ptr = @ptrCast([*]const u8, ptr);
         var len = c.zmq_msg_size(&self.msg);
         var alloc_data = direct_allocator.alloc(u8, len) catch unreachable;
         @memcpy(alloc_data.ptr, zig_ptr, len);
