@@ -37,3 +37,9 @@ Chat:
     - App name mostly.
     - App hash. Or base trust hash which works with app name (which would mean you just need app name).
     -
+
+# Ratings
+    - How would ratings work.
+    - Mechanism design, Schulze basis.
+    - ratings need to be public, to be verified.
+    - Could have anonymous trust-basis using currency. Does the currency here get burned? Can you just pass it along, doesn't seem right. If it gets burned, it should probably by inflationary. Who would want to keep that, people that want to use it. Who would pay for it from a base currency, also people that need it right now. Needs Safe auction currency-sub-currency exchange (SSCE [Safe Sub Currency Exchange]). Needs time-locked contracts and settlement in both (see atomic exchange protocols).
