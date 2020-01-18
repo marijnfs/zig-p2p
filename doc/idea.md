@@ -17,5 +17,23 @@ Chat:
 
 # Life-line
     - Patreon style tree (/or whole sub currency), that keeps donations going, keeps track of what should be public or not (people like to show this, see total donations). Could work to assert certain work in other places to ensure authenticity. Authenticity is the main problem, did the creator create this work. Could use ideas like https signed pages parsing (Should be time-based parsing in case style updates). 
+
+# personal github
+    - Sub-tree for keeping Github style repo base. How to store your files in other peoples bases? Periodically pay for hashes of files with new random? Pay extra when retrieving? Or sometimes retrieve completely to test? 
+    - Dunno how privacy works here. All files are stored encrypted, you heep hashes. Keep all files organized only for you. Keep storage key-based. One file could be base tree to keep it organized, other files are whole blobs (like archiver / git structure). Base hash retrieve all the rest. Base hash comes from base key.
     
 # Sub-currenies
+    - How to deal with sub-currencies, like trust currency. What currency type fits trust currency, something more ephemeral?
+    - Sub-currencies could be their own apps with clear app intercommunication. Intercommunication could be through a base currency, but maybe something more local is possible. 
+    - Somewhere there would be a bottlenecks with maximum transactions. These should not be able to be clogged. 
+      - Could be base currency, that is somehow not getting clogged. Is cap flexible? Could someone assume a risk? Would need that there is always money vetted. 
+      - A base currency always implies a base distribution; the only way is if anyone can start their own / somehow inflate on volition? How could this be generalized.
+      - Base currency inflation could be done under sub-worlds. Inflated sub-currency could be created, and main currency could allow tracking it. Then people can trade base currency for that sub-currency! They could get into contracts that start valueing sub-currency and trading it. Where does it consolidate? Does everything become part of the base currency under a certain condition? Could work, distribution of base currency has happened. However, a completely non-interacting owner would own more. So inflated Base-currency should really inflate it as it becomes part of the real. Basically base currency needs to assume the pretend created by subcurrency, or could get into cents-to-the-dollar contracts. This could be part of the assumption, as slowly the initial proposal + concession = trade deal become new base currency!
+    
+# Sub-trees.
+    - Sub trees are cryptographic bases for specified apps.
+    - App definition should be part of the tree.
+    - Any data can create a tree, so should be easy if we define how to create this data easily.
+    - App name mostly.
+    - App hash. Or base trust hash which works with app name (which would mean you just need app name).
+    -
