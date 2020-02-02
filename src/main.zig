@@ -39,7 +39,6 @@ const Archive = struct {
         self.index += valueSize;
     }
 
-
     pub fn serialize(self: *Archive, value: var) !void {
         const T = @TypeOf(value);
         switch (@typeInfo(T)) {
@@ -51,8 +50,9 @@ const Archive = struct {
     }
 };
 
-pub fn main() anyerror!void {
+pub fn serialize(comptime T: type, data: T) void {}
 
+pub fn main() anyerror!void {
     var archive = Archive.new(std.heap.direct_allocator);
     var abc: i64 = 4;
     try archive.serialize(abc);
@@ -70,12 +70,12 @@ pub fn main() anyerror!void {
     std.debug.warn("start while", .{});
 
     while (true) {
-        var msg : c.zmq_msg_t = undefined;
+        var msg: c.zmq_msg_t = undefined;
         var rc = c.zmq_msg_init(&msg);
         rc = c.zmq_msg_recv(&msg, socket, 0);
         std.debug.warn("recv rc: {}\n", .{rc});
 
-        std.debug.warn("Received", .{}); 
+        std.debug.warn("Received", .{});
         rc = c.zmq_msg_send(&msg, socket, 0);
         std.debug.warn("send rc: {}\n", .{rc});
     }
