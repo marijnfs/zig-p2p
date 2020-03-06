@@ -1,7 +1,7 @@
 const std = @import("std");
 const Socket = @import("socket.zig").Socket;
 const Message = @import("message.zig").Message;
-
+const Serializer = @import("serialize.zig").Serializer;
 
 const c = @cImport({
     @cInclude("zmq.h");
@@ -56,7 +56,7 @@ const Archive = struct {
 
 const Bla = struct {
     a: i64,
-    b: f64
+    b: f64,
 };
 
 pub fn main() anyerror!void {
@@ -76,15 +76,12 @@ pub fn main() anyerror!void {
 
     std.debug.warn("start while", .{});
 
-    var buf = try std.Buffer.initSize(std.heap.direct_allocator, 0);
-    var buffered_stream = std.BufferOutStream.init(&buf);
-    const Error = std.BufferOutStream.Error;
-    var serializer = std.io.Serializer(.Little, .Byte, Error).init(&buffered_stream.stream);
-
-    var bla = Bla{.a = 2, .b = 4};
+    var serializer = try Serializer.init();
+    var bla = Bla{ .a = 2, .b = 4 };
     var err = try serializer.serialize(bla);
+    var buf = serializer.buffer;
 
-    std.debug.warn("{} {}\n", .{buf.len(), buf.toSlice()});
+    std.debug.warn("{} {}\n", .{ buf.len(), buf.toSlice() });
 
     while (true) {
         var msg: c.zmq_msg_t = undefined;
