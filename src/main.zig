@@ -1,4 +1,7 @@
 const std = @import("std");
+const Socket = @import("socket.zig").Socket;
+const Message = @import("message.zig").Message;
+
 
 const c = @cImport({
     @cInclude("zmq.h");
@@ -9,6 +12,7 @@ const mem = std.mem;
 const Allocator = mem.Allocator;
 
 const baseSize = 1 << 8; //256 bytes
+
 const Archive = struct {
     allocator: *Allocator,
     buffer: ?[]u8,
@@ -22,8 +26,8 @@ const Archive = struct {
 
     pub fn reserve(self: *Archive, size: u64) !void {
         if (self.size == 0) {
-            self.buffer = try self.allocator.alloc(u8, baseSize);
             self.size = baseSize;
+            self.buffer = try self.allocator.alloc(u8, baseSize);
         }
 
         while (self.index + size > self.size) {
@@ -51,8 +55,12 @@ const Archive = struct {
     }
 };
 
-pub fn main() anyerror!void {
+const Bla = struct {
+    a: i64,
+    b: f64
+};
 
+pub fn main() anyerror!void {
     var archive = Archive.new(std.heap.direct_allocator);
     var abc: i64 = 4;
     try archive.serialize(abc);
@@ -68,6 +76,16 @@ pub fn main() anyerror!void {
     var responder = c.zmq_bind(socket, endpoint);
 
     std.debug.warn("start while", .{});
+
+    var buf = try std.Buffer.initSize(std.heap.direct_allocator, 0);
+    var buffered_stream = std.BufferOutStream.init(&buf);
+    const Error = std.BufferOutStream.Error;
+    var serializer = std.io.Serializer(.Little, .Byte, Error).init(&buffered_stream.stream);
+
+    var bla = Bla{.a = 2, .b = 4};
+    var err = try serializer.serialize(bla);
+
+    std.debug.warn("{} {}\n", .{buf.len(), buf.toSlice()});
 
     while (true) {
         var msg : c.zmq_msg_t = undefined;

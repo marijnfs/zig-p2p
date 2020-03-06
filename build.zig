@@ -21,7 +21,6 @@ pub fn build_exe(b: *Builder, name: [] const u8) !void {
     const exe = b.addExecutable(name, try fmt.allocPrint(allocator, "src/{}.zig", .{name}));
 
 
-
     exe.addCSourceFile("ext/monocypher-2.0.5/src/monocypher.c", cflags);
     exe.addIncludeDir("ext/monocypher-2.0.5/src");
     exe.addLibPath("/usr/lib64");    
