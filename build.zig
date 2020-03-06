@@ -20,7 +20,7 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
 
     exe.linkSystemLibrary("zmq");
 
-    exe.linkSystemLibrary("c");
+    exe.linkLibC();
     exe.linkSystemLibrary("c++");
 
     exe.setBuildMode(mode);
