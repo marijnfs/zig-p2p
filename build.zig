@@ -28,7 +28,7 @@ pub fn build_exe(b: *Builder, name: [] const u8) !void {
 
     exe.linkSystemLibrary("zmq");
 
-    exe.linkSystemLibrary("c");
+    exe.linkLibC();
     exe.linkSystemLibrary("c++");
 
     exe.setBuildMode(mode);
