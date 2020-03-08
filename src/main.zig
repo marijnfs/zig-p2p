@@ -74,11 +74,12 @@ pub fn main() anyerror!void {
     const endpoint = "ipc:///tmp/test";
     var responder = c.zmq_bind(socket, endpoint);
 
-    std.debug.warn("start while", .{});
+    std.debug.warn("start while\n", .{});
 
     var serializer = try Serializer.init();
     var bla = Bla{ .a = 2, .b = 4 };
-    var err = try serializer.serialize(bla);
+    var bloe: i64 = 4;
+    var err = try serializer.serialize(bloe);
     var buf = serializer.buffer;
 
     std.debug.warn("{} {}\n", .{ buf.len(), buf.toSlice() });
