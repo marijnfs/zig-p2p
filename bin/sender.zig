@@ -1,6 +1,7 @@
 const std = @import("std");
-const Socket = @import("../src/socket.zig").Socket;
-const Message = @import("../src/message.zig").Message;
+const p2p = @import("p2p");
+const Socket = p2p.Socket;
+const Message = p2p.Message;
 
 const testing = std.testing;
 const mem = std.mem;

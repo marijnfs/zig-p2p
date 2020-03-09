@@ -12,14 +12,14 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
         "-Wall",
     };
 
-    const exe = b.addExecutable(name, try fmt.allocPrint(allocator, "src/{}.zig", .{name}));
+    const exe = b.addExecutable(name, try fmt.allocPrint(allocator, "bin/{}.zig", .{name}));
 
     exe.addCSourceFile("ext/monocypher-2.0.5/src/monocypher.c", cflags);
     exe.addIncludeDir("ext/monocypher-2.0.5/src");
     exe.addLibPath("/usr/lib64");
     exe.addLibPath("/usr/lib64/gcc/x86_64-suse-linux/7");
     exe.linkSystemLibrary("zmq");
-
+    exe.addPackagePath("p2p", "src/p2p.zig");
     exe.linkLibC();
     exe.linkSystemLibrary("stdc++");
 
@@ -34,20 +34,7 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
 }
 
 pub fn build(b: *Builder) void {
-    const exe_pub = build_exe(b, "pub");
-    const exe_sub = build_exe(b, "sub");
     const exe_main = build_exe(b, "main");
     const exe_test = build_exe(b, "test");
-
-    // const exe2 = b.addExecutable("sub", "src/sub.zig");
-    // exe2.setBuildMode(mode);
-    // exe2.addLibPath("/usr/lib64");
-    // exe2.linkSystemLibrary("zmq");
-    // exe2.install();
-
-    // const run_cmd = exe.run();
-    // run_cmd.step.dependOn(b.getInstallStep());
-
-    // const run_step = b.step("run", "Run the app");
-    // run_step.dependOn(&run_cmd.step);
+    const exe_sender = build_exe(b, "sender");
 }

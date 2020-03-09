@@ -9,12 +9,10 @@ const c = @cImport({
     @cInclude("zmq.h");
 });
 
-
-
 pub const Message = struct {
     msg: c.zmq_msg_t,
 
-    pub fn init(buffer: [] const u8) Message {
+    pub fn init(buffer: []const u8) Message {
         var tmp_msg: c.zmq_msg_t = undefined;
         var rc = c.zmq_msg_init_data(&tmp_msg, @intToPtr(*u8, @ptrToInt(buffer.ptr)), buffer.len, null, null);
         return Message{
@@ -26,7 +24,7 @@ pub const Message = struct {
         _ = c.zmq_msg_close(&msg);
     }
 
-    pub fn data(self: *Message) []u8 {
+    pub fn get_data(self: *Message) []u8 {
         var ptr = c.zmq_msg_data(&self.msg);
         var zig_ptr = @ptrCast([*]const u8, ptr);
         var len = c.zmq_msg_size(&self.msg);
@@ -34,5 +32,4 @@ pub const Message = struct {
         @memcpy(alloc_data.ptr, zig_ptr, len);
         return alloc_data;
     }
-
 };
