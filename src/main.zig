@@ -78,11 +78,11 @@ pub fn main() anyerror!void {
 
     var serializer = try Serializer.init();
     var bla = Bla{ .a = 2, .b = 4 };
-    var bloe: i64 = 4;
+    var bloe: i64 = 5;
     var err = try serializer.serialize(bloe);
     var buf = serializer.buffer();
 
-    std.debug.warn("{} {}\n", .{ buf.len(), buf.toSlice() });
+    std.debug.warn("{x}\n", .{ buf });
 
     while (true) {
         var msg: c.zmq_msg_t = undefined;

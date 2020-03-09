@@ -9,34 +9,21 @@ const Error = std.BufferOutStream.Error;
 const StdSerializer = std.io.Serializer(.Little, .Byte, Error);
  
 pub const Serializer = struct {
-    buffer: []std.Buffer,
-    buffered_stream: []std.BufferOutStream,
-    serializer: StdSerializer,
+    buffer: std.Buffer,
  
-    pub fn init_fields(self: *Serializer) !void {
-        self.buffer = try std.heap.direct_allocator.alloc(std.Buffer, 1);
-        self.buffer[0] = try std.Buffer.initSize(std.heap.direct_allocator, 0);
-        self.buffered_stream = try std.heap.direct_allocator.alloc(std.BufferOutStream, 1);
-        self.buffered_stream[0] = std.BufferOutStream.init(&self.buffer[0]);
-        self.serializer = StdSerializer.init(&self.buffered_stream[0].stream);
-    }
-
     pub fn init() !Serializer {
-        var serializer: Serializer = undefined;
-        try serializer.init_fields();
-        return serializer;
+        return Serializer {
+            .buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0),
+        };
     }
  
-    pub fn deinit() void {
+    pub fn deinit(self: *Serializer) void {
         self.buffer.deinit();
-        self.buffered_stream.deinit();
-        self.serializer.deinit();
-        std.heap.direct_allocator.free(self.buffer);
-        std.heap.direct_allocator.free(self.buffered_stream);
     }
  
     pub fn serialize(self: *Serializer, value: var) !void {
-        try self.serializer.serialize(value);
+        var stream = std.BufferOutStream.init(&self.buffer);
+        try StdSerializer.init(&stream.stream).serialize(value);
     }
 };
  
@@ -50,13 +37,13 @@ pub fn main() !void {
     var bla = Bla{.a = 1, .b = 2.0};
     try std_serializer.serialize(bla);
  
- 
-    //through struct
-    var my_serializer : Serializer = undefined;
-    try my_serializer.init_fields();
 
-    var my_serializer2 = try Serializer.init();
+    //through struct
+    var my_serializer = try Serializer.init();
+    defer my_serializer.deinit();
 
     try my_serializer.serialize(bla); //ok
-    try my_serializer2.serialize(bla); //ok
+
+    std.debug.warn("first:  {x}\n", .{ buffer.toSliceConst() });
+    std.debug.warn("second: {x}\n", .{ my_serializer.buffer.toSliceConst() });
 }
