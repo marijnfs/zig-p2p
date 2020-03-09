@@ -17,11 +17,11 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
     exe.addCSourceFile("ext/monocypher-2.0.5/src/monocypher.c", cflags);
     exe.addIncludeDir("ext/monocypher-2.0.5/src");
     exe.addLibPath("/usr/lib64");
-
+    exe.addLibPath("/usr/lib64/gcc/x86_64-suse-linux/7");
     exe.linkSystemLibrary("zmq");
 
     exe.linkLibC();
-    exe.linkSystemLibrary("c++");
+    exe.linkSystemLibrary("stdc++");
 
     exe.setBuildMode(mode);
     exe.install();
@@ -29,7 +29,6 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
 
-    exe.linkSystemLibrary("stdc++");
     exe.install();
     return exe;
 }
@@ -38,6 +37,7 @@ pub fn build(b: *Builder) void {
     const exe_pub = build_exe(b, "pub");
     const exe_sub = build_exe(b, "sub");
     const exe_main = build_exe(b, "main");
+    const exe_test = build_exe(b, "test");
 
     // const exe2 = b.addExecutable("sub", "src/sub.zig");
     // exe2.setBuildMode(mode);

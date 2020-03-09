@@ -20,6 +20,7 @@ pub const Serializer = struct {
     pub fn deinit() void {}
 
     pub fn serialize(self: *Serializer, value: var) Error!void {
-        try self.serialize(value);
+        std.debug.warn("{}\n", .{self.serializer});
+        try self.serializer.serialize(value);
     }
 };

@@ -78,7 +78,17 @@ pub fn main() anyerror!void {
 
     var serializer = try Serializer.init();
     var bla = Bla{ .a = 2, .b = 4 };
-    var err = try serializer.serialize(bla);
+
+    //var err = try serializer.serialize(bla);
+
+    var buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0);
+    var buffered_stream = std.BufferOutStream.init(&buffer);
+    const Error = std.BufferOutStream.Error;
+    const StdSerializer = std.io.Serializer(.Little, .Byte, Error);
+    var std_serializer = &StdSerializer.init(&buffered_stream.stream);
+
+    try std_serializer.serialize(bla);
+    try serializer.serializer.serialize(bla);
     var buf = serializer.buffer;
 
     std.debug.warn("{} {}\n", .{ buf.len(), buf.toSlice() });
