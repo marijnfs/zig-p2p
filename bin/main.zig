@@ -22,7 +22,8 @@ pub fn main() anyerror!void {
     defer socket.deinit();
 
     const endpoint = "ipc:///tmp/test";
-    socket.connect(endpoint);
+    var rc = socket.bind(endpoint);
+    std.debug.warn("bind: {}\n", .{rc});
 
     var serializer = try Serializer.init();
     var bla = Bla{ .a = 2, .b = 4 };
@@ -33,17 +34,19 @@ pub fn main() anyerror!void {
     std.debug.warn("start while\n", .{});
     std.debug.warn("{x}\n", .{buf});
 
-    var message: *Message = undefined;
+    var message = Message.init();
 
     while (true) {
-        var rc = socket.recv(message);
+        std.debug.warn("message: {}", .{message});
+        rc = socket.recv(&message);
         std.debug.warn("recv rc: {}\n", .{rc});
 
         var data = message.get_data();
         std.debug.warn("Received {}", .{data});
 
-        var send_message = Message.init(buf);
-        rc = socket.send(message);
+        var send_message = Message.init_buffer(buf);
+        defer send_message.deinit();
+        rc = socket.send(&send_message);
         std.debug.warn("send rc: {}\n", .{rc});
     }
 

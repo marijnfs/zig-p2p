@@ -20,7 +20,8 @@ pub fn main() anyerror!void {
 
     var test_socket = Socket.init(context, c.ZMQ_REQ);
     std.debug.warn("All your base are belong to us.\n", .{});
-    test_socket.connect("ipc:///tmp/test");
+    var rc = test_socket.connect("ipc:///tmp/test");
+    std.debug.warn("connect: {}", .{rc});
 
     std.debug.warn("start while", .{});
 
@@ -30,8 +31,9 @@ pub fn main() anyerror!void {
         if (counter % 10000 == 0)
             std.debug.warn("bla\n", .{});
 
-        var msg = Message.init("Some msg");
-        var rc = test_socket.send(&msg);
+        var some_msg = "asfa";
+        var msg = Message.init_buffer(some_msg);
+        rc = test_socket.send(&msg);
         rc = test_socket.recv(&msg);
         var recv_data = msg.get_data();
         std.debug.warn("{}", .{recv_data});

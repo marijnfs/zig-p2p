@@ -12,7 +12,15 @@ const c = @cImport({
 pub const Message = struct {
     msg: c.zmq_msg_t,
 
-    pub fn init(buffer: []const u8) Message {
+    pub fn init() Message {
+        var tmp_msg: c.zmq_msg_t = undefined;
+        var rc = c.zmq_msg_init(&tmp_msg);
+        return Message{
+            .msg = tmp_msg,
+        };
+    }
+
+    pub fn init_buffer(buffer: []const u8) Message {
         var tmp_msg: c.zmq_msg_t = undefined;
         var rc = c.zmq_msg_init_data(&tmp_msg, @intToPtr(*u8, @ptrToInt(buffer.ptr)), buffer.len, null, null);
         return Message{
@@ -20,8 +28,8 @@ pub const Message = struct {
         };
     }
 
-    pub fn deinit(self: *Socket) void {
-        _ = c.zmq_msg_close(&msg);
+    pub fn deinit(self: *Message) void {
+        _ = c.zmq_msg_close(&self.msg);
     }
 
     pub fn get_data(self: *Message) []u8 {

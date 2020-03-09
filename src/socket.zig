@@ -24,20 +24,12 @@ pub const Socket = struct {
 
     pub fn deinit(self: *Socket) void {}
 
-    pub fn connect(self: *Socket, endpoint: []const u8) void {
-        var c_endpoint = direct_allocator.alloc(u8, endpoint.len + 1) catch unreachable;
-        @memcpy(c_endpoint.ptr, endpoint.ptr, endpoint.len);
-        c_endpoint[endpoint.len] = 0;
-
-        _ = c.zmq_connect(self.socket, c_endpoint.ptr);
+    pub fn connect(self: *Socket, endpoint: [:0]const u8) c_int {
+        return c.zmq_connect(self.socket, endpoint);
     }
 
-    pub fn bind(self: *Socket, endpoint: []const u8) void {
-        var c_endpoint = direct_allocator.alloc(u8, endpoint.len + 1) catch unreachable;
-        @memcpy(c_endpoint.ptr, endpoint.ptr, endpoint.len);
-        c_endpoint[endpoint.len] = 0;
-
-        _ = c.zmq_bind(self.socket, c_endpoint.ptr);
+    pub fn bind(self: *Socket, endpoint: [:0]const u8) c_int {
+        return c.zmq_bind(self.socket, endpoint);
     }
 
     pub fn send(self: *Socket, message: *Message) c_int {
