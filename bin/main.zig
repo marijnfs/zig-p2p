@@ -15,8 +15,8 @@ const Bla = struct {
 };
 
 pub fn main() anyerror!void {
-    std.debug.warn("All your base are belong to us.\n", .{});
     var context = c.zmq_ctx_new();
+    std.debug.warn("All your base are belong to us.\n", .{});
 
     var socket = Socket.init(context, c.ZMQ_REP);
     defer socket.deinit();
