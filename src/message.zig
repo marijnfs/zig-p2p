@@ -32,12 +32,13 @@ pub const Message = struct {
         _ = c.zmq_msg_close(&self.msg);
     }
 
-    pub fn get_data(self: *Message) []u8 {
+    pub fn get_buffer(self: *Message) !std.Buffer {
         var ptr = c.zmq_msg_data(&self.msg);
         var zig_ptr = @ptrCast([*]const u8, ptr);
         var len = c.zmq_msg_size(&self.msg);
-        var alloc_data = direct_allocator.alloc(u8, len) catch unreachable;
+        //todo, next part is leaking, needs a buffer?
+        var alloc_data = try direct_allocator.alloc(u8, len);
         @memcpy(alloc_data.ptr, zig_ptr, len);
-        return alloc_data;
+        return std.Buffer.fromOwnedSlice(direct_allocator, alloc_data);
     }
 };

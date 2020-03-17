@@ -19,6 +19,22 @@ pub const Serializer = struct {
 
     pub fn serialize(self: *Serializer, value: var) !void {
         var stream = self.std_buffer.outStream();
-        try std.io.Serializer(.Little, .Byte, @TypeOf(stream)).init(stream).serialize(value);
+        var serializer = std.io.Serializer(.Little, .Byte, @TypeOf(stream)).init(stream);
+        try serializer.serialize(value);
+        try serializer.flush();
+    }
+};
+
+pub const Deserializer = struct {
+    pub fn init() Deserializer {
+        return Deserializer{};
+    }
+
+    pub fn deinit(self: *Deserializer) void {}
+
+    pub fn deserialize(self: *Deserializer, comptime Type: type, buffer: []u8) !Type {
+        var in_stream = std.io.fixedBufferStream(buffer).inStream();
+        var deserializer = std.io.Deserializer(.Little, .Byte, std.io.FixedBufferStream([]u8).InStream).init(in_stream);
+        return try deserializer.deserialize(Type);
     }
 };

@@ -3,7 +3,9 @@ const p2p = @import("p2p");
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Serializer = p2p.Serializer;
+const Deserializer = p2p.Deserializer;
 
+const warn = std.debug.warn;
 const c = @cImport({
     @cInclude("zmq.h");
     @cInclude("monocypher.h");
@@ -14,41 +16,37 @@ const Bla = struct {
     b: f64,
 };
 
+const endpoint = "ipc:///tmp/test";
+
 pub fn main() anyerror!void {
     var context = c.zmq_ctx_new();
-    std.debug.warn("All your base are belong to us.\n", .{});
 
     var socket = Socket.init(context, c.ZMQ_REP);
     defer socket.deinit();
 
-    const endpoint = "ipc:///tmp/test";
     var rc = socket.bind(endpoint);
-    std.debug.warn("bind: {}\n", .{rc});
-
-    var serializer = try Serializer.init();
-    var bla = Bla{ .a = 2, .b = 4 };
-    var bloe: i64 = 5;
-    var err = try serializer.serialize(bloe);
-    var buf = serializer.buffer();
-
-    std.debug.warn("start while\n", .{});
-    std.debug.warn("{x}\n", .{buf});
-
-    var message = Message.init();
 
     while (true) {
-        std.debug.warn("message: {}", .{message});
-        rc = socket.recv(&message);
-        std.debug.warn("recv rc: {}\n", .{rc});
+        {
+            var message = Message.init();
+            defer message.deinit();
+            rc = socket.recv(&message);
 
-        var data = message.get_data();
-        std.debug.warn("Received {}", .{data});
+            warn("recv rc: {}\n", .{rc});
 
-        var send_message = Message.init_buffer(buf);
+            var deserializer = Deserializer.init();
+            defer deserializer.deinit();
+            var buffer = try message.get_buffer();
+            defer buffer.deinit();
+            var item = deserializer.deserialize(Bla, buffer.span());
+            warn("{}\n", .{item});
+        }
+
+        var send_message = Message.init_buffer("hello");
         defer send_message.deinit();
         rc = socket.send(&send_message);
-        std.debug.warn("send rc: {}\n", .{rc});
+        warn("send rc: {}\n", .{rc});
     }
 
-    std.debug.warn("All your base are belong to us.\n");
+    warn("All your base are belong to us.\n");
 }
