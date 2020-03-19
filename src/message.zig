@@ -4,7 +4,7 @@ const mem = std.mem;
 const Allocator = mem.Allocator;
 
 const direct_allocator = std.heap.direct_allocator;
-
+const warn = std.debug.warn;
 const c = @cImport({
     @cInclude("zmq.h");
 });
@@ -20,15 +20,18 @@ pub const Message = struct {
         };
     }
 
-    pub fn init_buffer(buffer: []const u8) Message {
+    pub fn init_buffer(buffer: []const u8) !Message {
         var tmp_msg: c.zmq_msg_t = undefined;
-        var rc = c.zmq_msg_init_data(&tmp_msg, @intToPtr(*u8, @ptrToInt(buffer.ptr)), buffer.len, null, null);
+        var newbuf = try direct_allocator.alloc(u8, buffer.len);
+        mem.copy(u8, newbuf[0..], buffer[0..]);
+        var rc = c.zmq_msg_init_data(&tmp_msg, @intToPtr(*u8, @ptrToInt(newbuf.ptr)), newbuf.len, null, null);
         return Message{
             .msg = tmp_msg,
         };
     }
 
     pub fn deinit(self: *Message) void {
+        warn("message:deinit", .{});
         _ = c.zmq_msg_close(&self.msg);
     }
 

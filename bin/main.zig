@@ -37,12 +37,11 @@ pub fn main() anyerror!void {
             var deserializer = Deserializer.init();
             defer deserializer.deinit();
             var buffer = try message.get_buffer();
-            defer buffer.deinit();
             var item = deserializer.deserialize(Bla, buffer.span());
             warn("{}\n", .{item});
         }
 
-        var send_message = Message.init_buffer("hello");
+        var send_message = try Message.init_buffer("hello");
         defer send_message.deinit();
         rc = socket.send(&send_message);
         warn("send rc: {}\n", .{rc});
