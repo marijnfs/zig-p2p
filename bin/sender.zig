@@ -34,6 +34,7 @@ pub fn main() anyerror!void {
         {
             var bla = Bla{ .a = 2, .b = 4 };
             var serializer = try Serializer.init();
+            defer serializer.deinit();
             var err = try serializer.serialize(bla);
             var buffer = serializer.buffer();
             var message = Message.init_buffer(buffer);
