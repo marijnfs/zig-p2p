@@ -31,7 +31,6 @@ pub const Message = struct {
     }
 
     pub fn deinit(self: *Message) void {
-        warn("message:deinit", .{});
         _ = c.zmq_msg_close(&self.msg);
     }
 

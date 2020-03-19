@@ -37,7 +37,7 @@ pub fn main() anyerror!void {
             var deserializer = Deserializer.init();
             defer deserializer.deinit();
             var buffer = try message.get_buffer();
-            var item = deserializer.deserialize(Bla, buffer.span());
+            var item = try deserializer.deserialize(Bla, buffer.span());
             warn("{}\n", .{item});
         }
 
