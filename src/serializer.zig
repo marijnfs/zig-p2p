@@ -14,7 +14,7 @@ pub const Serializer = struct {
     }
 
     pub fn deinit(self: *Serializer) void {
-        self.buffer.deinit();
+        self.std_buffer.deinit();
     }
 
     pub fn serialize(self: *Serializer, value: var) !void {
