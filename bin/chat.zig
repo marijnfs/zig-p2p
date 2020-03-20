@@ -18,6 +18,8 @@ const c = @cImport({
     @cInclude("monocypher.h");
 });
 
+var work_queue: p2p.AtomicQueue(i64) = undefined;
+
 fn reader(socket: *Socket) void {
     while (true) {
         var msg = Message.init();
@@ -62,15 +64,29 @@ const Chat = struct {
 pub fn main() anyerror!void {
     warn("Chat\n", .{});
 
+    work_queue = p2p.AtomicQueue(i64).init(direct_allocator);
+    try work_queue.push(1);
+    try work_queue.push(2);
+    try work_queue.push(3);
+    try work_queue.push(4);
+    _ = try work_queue.pop();
+    try work_queue.push(5);    
+    try work_queue.push(6);
+
+    while (!work_queue.empty()) {
+        warn("queue item: {}\n", .{work_queue.pop()});
+    }
+
     var context = c.zmq_ctx_new();
 
     var argv = std.os.argv;
+    if (argv.len < 3) {
+        std.debug.panic("Not enough arguments: usage {} [bind_point] [connect_point], e.g. bind_point = ipc:///tmp/dummy\n", .{argv[0]});
+    }
     const bind_point = mem.toSliceConst(u8, argv[1]);
     const connect_point = mem.toSliceConst(u8, argv[2]);
 
-    if (argv.len < 3) {
-        std.debug.panic("Not enough arguments: usage {} [bind_point] [connect_point]<, e.g. bind_point = ipc:///tmp/dummy\n", .{argv[0]});
-    }
+
 
 
 
