@@ -37,4 +37,5 @@ pub fn build(b: *Builder) void {
     const exe_main = build_exe(b, "main");
     const exe_test = build_exe(b, "test");
     const exe_sender = build_exe(b, "sender");
+    const exe_chat = build_exe(b, "chat");
 }

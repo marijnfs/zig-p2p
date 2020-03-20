@@ -24,12 +24,16 @@ pub const Socket = struct {
 
     pub fn deinit(self: *Socket) void {}
 
-    pub fn connect(self: *Socket, endpoint: [:0]const u8) c_int {
-        return c.zmq_connect(self.socket, endpoint);
+    pub fn connect(self: *Socket, endpoint: [:0]const u8) !void {
+        const rc = c.zmq_connect(self.socket, endpoint);
+        if (rc == -1)
+            return error.ConnectionFailed;
     }
 
-    pub fn bind(self: *Socket, endpoint: [:0]const u8) c_int {
-        return c.zmq_bind(self.socket, endpoint);
+    pub fn bind(self: *Socket, endpoint: [:0]const u8) !void {
+        const rc = c.zmq_bind(self.socket, endpoint);
+        if (rc == -1)
+            return error.ConnectionFailed;
     }
 
     pub fn send(self: *Socket, message: *Message) c_int {

@@ -24,13 +24,13 @@ pub fn main() anyerror!void {
     var socket = Socket.init(context, c.ZMQ_REP);
     defer socket.deinit();
 
-    var rc = socket.bind(endpoint);
+    try socket.bind(endpoint);
 
     while (true) {
         {
             var message = Message.init();
             defer message.deinit();
-            rc = socket.recv(&message);
+            var rc = socket.recv(&message);
 
             warn("recv rc: {}\n", .{rc});
 
@@ -43,7 +43,7 @@ pub fn main() anyerror!void {
 
         var send_message = try Message.init_buffer("hello");
         defer send_message.deinit();
-        rc = socket.send(&send_message);
+        var rc = socket.send(&send_message);
         warn("send rc: {}\n", .{rc});
     }
 

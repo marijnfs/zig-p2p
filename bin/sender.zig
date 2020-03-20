@@ -27,7 +27,7 @@ pub fn main() anyerror!void {
     var context = c.zmq_ctx_new();
 
     var test_socket = Socket.init(context, c.ZMQ_REQ);
-    var rc = test_socket.connect("ipc:///tmp/test");
+    try test_socket.connect("ipc:///tmp/test");
 
     var counter: u64 = 0;
 
@@ -40,7 +40,7 @@ pub fn main() anyerror!void {
             defer buffer.deinit();
             var message = try Message.init_buffer(buffer.span());
             defer message.deinit();
-            rc = test_socket.send(&message);
+            var rc = test_socket.send(&message);
             warn("first line\n", .{});
         }
 
@@ -50,7 +50,7 @@ pub fn main() anyerror!void {
             warn("{}\n", .{message});
             defer message.deinit();
             warn("second line\n", .{});
-            rc = test_socket.recv(&message);
+            var rc = test_socket.recv(&message);
             warn("second line\n", .{});
             var recv_data = try message.get_buffer();
             defer recv_data.deinit();
