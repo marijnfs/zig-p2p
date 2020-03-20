@@ -1,6 +1,7 @@
 //an atomic queue
 
 const std = @import("std");
+const warn = std.debug.warn;
 
 const ArrayList = std.ArrayList;
 
@@ -33,6 +34,7 @@ pub fn AtomicQueue(comptime T: type) type {
             try self.insertCheck();
             try self.buffer.append(value);
             self.back += 1;
+            warn("Pushing item {}\n", .{value});
         }
 
         pub fn pop(self: *Self) !T {
@@ -44,6 +46,7 @@ pub fn AtomicQueue(comptime T: type) type {
             const value = self.buffer.span()[self.front];
             self.front += 1;
 
+            warn("popping item {}\n", .{value});
             return value;
         }
 
@@ -69,6 +72,7 @@ pub fn AtomicQueue(comptime T: type) type {
            return self.back - self.front;
         }
 
+        //make sure we can insert an item. Move of allocate memory if needed.
         fn insertCheck(self: *Self) !void {
             const desired_capacity = (self._size() + 1) * 2; // double capacity is desired to prevent too many mem copies
             if (desired_capacity < self.buffer.capacity())

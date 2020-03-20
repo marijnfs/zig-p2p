@@ -22,7 +22,9 @@ pub const Socket = struct {
         };
     }
 
-    pub fn deinit(self: *Socket) void {}
+    pub fn deinit(self: *Socket) void {
+        const rc = c.zmq_close(self.socket);
+    }
 
     pub fn connect(self: *Socket, endpoint: [:0]const u8) !void {
         const rc = c.zmq_connect(self.socket, endpoint);
