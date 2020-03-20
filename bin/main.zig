@@ -41,7 +41,7 @@ pub fn main() anyerror!void {
             warn("{}\n", .{item});
         }
 
-        var send_message = try Message.init_buffer("hello");
+        var send_message = try Message.init_slice("hello");
         defer send_message.deinit();
         var rc = socket.send(&send_message);
         warn("send rc: {}\n", .{rc});

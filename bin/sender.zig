@@ -38,7 +38,7 @@ pub fn main() anyerror!void {
             var buffer = try serializer.serialize(bla);
             warn("{}\n", .{buffer});
             defer buffer.deinit();
-            var message = try Message.init_buffer(buffer.span());
+            var message = try Message.init_slice(buffer.span());
             defer message.deinit();
             var rc = test_socket.send(&message);
             warn("first line\n", .{});

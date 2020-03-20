@@ -34,7 +34,6 @@ pub fn AtomicQueue(comptime T: type) type {
             try self.insertCheck();
             try self.buffer.append(value);
             self.back += 1;
-            warn("Pushing item {}\n", .{value});
         }
 
         pub fn pop(self: *Self) !T {
@@ -46,7 +45,6 @@ pub fn AtomicQueue(comptime T: type) type {
             const value = self.buffer.span()[self.front];
             self.front += 1;
 
-            warn("popping item {}\n", .{value});
             return value;
         }
 

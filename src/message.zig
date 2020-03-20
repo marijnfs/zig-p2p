@@ -20,7 +20,7 @@ pub const Message = struct {
         };
     }
 
-    pub fn init_buffer(buffer: []const u8) !Message {
+    pub fn init_slice(buffer: []const u8) !Message {
         var tmp_msg: c.zmq_msg_t = undefined;
         // allocate new buffer, as zeromq will take ownership of this memory
         var newbuf = try direct_allocator.alloc(u8, buffer.len);

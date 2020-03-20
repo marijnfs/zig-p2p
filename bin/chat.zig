@@ -20,12 +20,27 @@ const c = @cImport({
 });
 
 const Chat = struct {
-    user: std.Buffer,
-    message: std.Buffer,
+    user: []u8,
+    message: []u8,
+    allocator: *Allocator,
+
+    fn init(user: [:0] const u8, message: [:0] const u8, allocator: *Allocator) !Chat {
+        const user_buf = try allocator.alloc(u8, user.len);
+        std.mem.copy(u8, user_buf, user);
+
+        const message_buf = try allocator.alloc(u8, message.len);
+        std.mem.copy(u8, message_buf, message);
+
+        return Chat {
+            .user = user_buf,
+            .message = message_buf,
+            .allocator = allocator,
+        };
+    }
 
     fn deinit(self: *Chat) void {
-        // self.user.deinit();
-        // self.message.deinit();
+        self.allocator.free(self.user);
+        self.allocator.free(self.message);
     }
 };
 
@@ -73,8 +88,15 @@ const SendWorkItem = struct {
 
     fn process(work_item: *WorkItem) void {
         const self = @fieldParentPtr(SendWorkItem, "work_item", work_item);
+        var serializer: Serializer = undefined;
 
-        var msg = Message.init_buffer(self.chat.message.span()) catch unreachable;
+        //var buffer = serializer.serialize(.{std_buffer}) catch return;
+       // defer buffer.deinit();
+
+
+       // var msg = Message.init_slice(buffer.span()) catch unreachable;
+
+        var msg = Message.init_slice(self.chat.message) catch unreachable;
         defer msg.deinit();
         var rc_send = self.socket.send(&msg);
 
@@ -113,8 +135,7 @@ const PresentWorkItem = struct {
 
     fn process(work_item: *WorkItem) void {
         const self = @fieldParentPtr(PresentWorkItem, "work_item", work_item);
-        warn("Line: {}", .{self.chat.message});
-
+        warn("{}: {}\n", .{self.chat.user, self.chat.message});
     }
 };
 
@@ -129,13 +150,9 @@ fn receiver(socket: *Socket) void {
         defer buffer.deinit();
 
         //setup work item and add to queue
-        var chat = Chat{
-            .user = Buffer.init(direct_allocator, "incoming") catch unreachable, 
-            .message = Buffer.initFromBuffer(buffer) catch unreachable
-        };
-
+        var chat = Chat.init("incoming", buffer.span(), direct_allocator) catch unreachable;
         var present_work_item = PresentWorkItem.init(direct_allocator, chat) catch unreachable;
-        work_queue.push(present_work_item.work_item) catch unreachable;
+        work_queue.push(&present_work_item.work_item) catch unreachable;
 
         //receive response
         var return_msg = Message.init();
@@ -152,24 +169,23 @@ fn line_reader(socket: *Socket) void {
         // read a line
         var line = stdin.readUntilDelimiterAlloc(direct_allocator, '\n', 10000) catch break;
 
-        // set up a work item
-        var chat = Chat{
-            .user = Buffer.init(direct_allocator, "user") catch unreachable, 
-            .message = Buffer.init(direct_allocator, line) catch unreachable
-        };
+        // set up chat
+        var chat = Chat.init("user", line[0..:0], direct_allocator) catch unreachable;
+
+        // add work item to queue
         var send_work_item = SendWorkItem.init(direct_allocator, socket.*, chat) catch unreachable;
-        work_queue.push(send_work_item.work_item) catch unreachable;
+        work_queue.push(&send_work_item.work_item) catch unreachable;
     }
 }
 
 
-var work_queue: p2p.AtomicQueue(WorkItem) = undefined;
+var work_queue: p2p.AtomicQueue(*WorkItem) = undefined;
 
 
 fn worker(context: void) void {
     while (true) {
         if (work_queue.empty()) {
-            std.time.sleep(1000000);
+            std.time.sleep(100000);
             continue;
         }
 
@@ -186,12 +202,7 @@ var connect_socket: Socket = undefined;
 pub fn main() anyerror!void {
     warn("Chat\n", .{});
 
-    work_queue = p2p.AtomicQueue(WorkItem).init(direct_allocator);
-
-    while (!work_queue.empty()) {
-        warn("queue item: {}\n", .{work_queue.pop()});
-    }
-
+    work_queue = p2p.AtomicQueue(*WorkItem).init(direct_allocator);
     var context = c.zmq_ctx_new();
 
     var argv = std.os.argv;
