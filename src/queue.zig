@@ -58,14 +58,21 @@ pub fn AtomicQueue(comptime T: type) type {
             const held = self.mutex.acquire();
             defer held.release();
 
-            return self.back - self.front;
+            return self._size();
         }
 
         fn _empty(self: *Self) bool {
            return self.front == self.back;
         }
 
+        fn _size(self: *Self) usize {
+           return self.back - self.front;
+        }
+
         fn insertCheck(self: *Self) !void {
+            const desired_capacity = (self._size() + 1) * 2; // double capacity is desired to prevent too many mem copies
+            if (desired_capacity < self.buffer.capacity())
+                try self.buffer.ensureCapacity(desired_capacity);
             if (self.buffer.capacity() < self.back + 1) {
                 if (self.front > 0) { //we can make space by moving
                     const N = self.back - self.front;
