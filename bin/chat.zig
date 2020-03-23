@@ -19,6 +19,14 @@ const c = @cImport({
     @cInclude("monocypher.h");
 });
 
+fn blake_hash_allocate(data: []u8, allocator: *mem.Allocator) ![]u8 {
+    const key_size = 32;
+    var hash = try allocator.alloc(u8, key_size);
+
+    c.crypto_blake2b_general(hash.ptr, hash.len, null, 0, data.ptr, data.len);
+    return hash;
+}
+
 const Chat = struct {
     user: []u8,
     message: []u8,
@@ -89,6 +97,8 @@ const SendWorkItem = struct {
         // var serializer: Serializer = undefined;
 
         var msg = Message.init_slice(self.chat.message) catch unreachable;
+        var some_hash = blake_hash_allocate(self.chat.message, direct_allocator) catch unreachable;
+        warn("Some Hash: {x}\n", .{some_hash});
 
         var i: usize = 0;
         while (i < outgoing_connections.len) : (i += 1) {
@@ -129,6 +139,8 @@ const PresentWorkItem = struct {
     }
 };
 
+var PRNG = DefaultPrng.init(0);
+
 const CheckConnectionWorkItem = struct {
     const Self = @This();
     work_item: WorkItem,
@@ -156,7 +168,38 @@ const CheckConnectionWorkItem = struct {
         const self = @fieldParentPtr(CheckConnectionWorkItem, "work_item", work_item);
         warn("discovery\n", .{});
 
+        var i: usize = 0;
+        while (i < outgoing_connections.len()) {
+            var current = outgoing_connections.ptrAt(i);
+            if (!current.active()) {
+                current.deinit();
+                outgoing_connections.orderedRemove(i);
+            } else {
+                i += 1;
+            }
 
+        }
+
+        const K: usize = 8;
+        if (known_addresses.len() > outgoing_connections.len()) {
+            var n: usize = 0;
+            while (n < k and outgoing_connections.len() < k) {
+                var selected_address = PRNG.random.int(known_addresses.len());
+
+                var found: bool = false;
+                for (outgoing_connections) |*conn| {
+                    if (std.mem.eql(u8, conn.connect_point.span(), selected_address)) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) continue;
+
+                var outgoing_connection = try OutgoingConnection.init(connect_point);
+                outgoing_connections.append(outgoing_connection);
+            }
+        }
+        // outgoing_connections
     }
 };
 
@@ -204,6 +247,7 @@ fn line_reader(arg: void) void {
 var work_queue: p2p.AtomicQueue(*WorkItem) = undefined;
 var known_addresses: std.ArrayList([:0]u8) = undefined;
 var outgoing_connections: std.ArrayList(OutgoingConnection) = undefined;
+var sent_map: std.AutoHashMap([]u8, []u8) = undefined;
 
 
 const OutgoingConnection = struct {
@@ -215,14 +259,20 @@ const OutgoingConnection = struct {
 
         return OutgoingConnection{
             .send_queue = p2p.AtomicQueue(Message).init(direct_allocator),
-            .socket = connect_socket
+            .socket = connect_socket,
+            .connect_point = try std.Buffer.init(direct_allocator, connect_point)
         };
+    }
+
+    fn deinit(self: *Self) void {
+        self.connect_point.deinit();
     }
 
     fn queue_message(self: *Self, message: Message) !void {
         try self.send_queue.push(message);
     }
 
+    connect_point: std.Buffer,
     send_queue: p2p.AtomicQueue(Message),
     socket: Socket
 };
