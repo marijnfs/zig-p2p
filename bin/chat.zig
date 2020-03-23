@@ -139,7 +139,7 @@ const PresentWorkItem = struct {
     }
 };
 
-var PRNG = DefaultPrng.init(0);
+var PRNG = std.rand.DefaultPrng.init(0);
 
 const CheckConnectionWorkItem = struct {
     const Self = @This();
@@ -166,14 +166,14 @@ const CheckConnectionWorkItem = struct {
 
     fn process(work_item: *WorkItem) void {
         const self = @fieldParentPtr(CheckConnectionWorkItem, "work_item", work_item);
-        warn("discovery\n", .{});
+        warn("Connection Management\n", .{});
 
         var i: usize = 0;
-        while (i < outgoing_connections.len()) {
+        while (i < outgoing_connections.len) {
             var current = outgoing_connections.ptrAt(i);
-            if (!current.active()) {
+            if (!current.active) {
                 current.deinit();
-                outgoing_connections.orderedRemove(i);
+                _ = outgoing_connections.swapRemove(i);
             } else {
                 i += 1;
             }
@@ -181,13 +181,14 @@ const CheckConnectionWorkItem = struct {
         }
 
         const K: usize = 8;
-        if (known_addresses.len() > outgoing_connections.len()) {
+        if (known_addresses.len > outgoing_connections.len) {
             var n: usize = 0;
-            while (n < k and outgoing_connections.len() < k) {
-                var selected_address = PRNG.random.int(known_addresses.len());
+            while (n < K and outgoing_connections.len < K) {
+                var selection = PRNG.random.uintLessThan(usize, known_addresses.len);
+                var selected_address = known_addresses.at(selection);
 
                 var found: bool = false;
-                for (outgoing_connections) |*conn| {
+                for (outgoing_connections.span()) |*conn| {
                     if (std.mem.eql(u8, conn.connect_point.span(), selected_address)) {
                         found = true;
                         break;
@@ -195,8 +196,8 @@ const CheckConnectionWorkItem = struct {
                 }
                 if (found) continue;
 
-                var outgoing_connection = try OutgoingConnection.init(connect_point);
-                outgoing_connections.append(outgoing_connection);
+                var outgoing_connection = OutgoingConnection.init(selected_address) catch unreachable;
+                outgoing_connections.append(outgoing_connection) catch unreachable;
             }
         }
         // outgoing_connections
@@ -260,7 +261,8 @@ const OutgoingConnection = struct {
         return OutgoingConnection{
             .send_queue = p2p.AtomicQueue(Message).init(direct_allocator),
             .socket = connect_socket,
-            .connect_point = try std.Buffer.init(direct_allocator, connect_point)
+            .connect_point = try std.Buffer.init(direct_allocator, connect_point),
+            .active = true
         };
     }
 
@@ -274,7 +276,8 @@ const OutgoingConnection = struct {
 
     connect_point: std.Buffer,
     send_queue: p2p.AtomicQueue(Message),
-    socket: Socket
+    socket: Socket,
+    active: bool
 };
 
 fn connection_processor(outgoing_connection: *OutgoingConnection) void {
@@ -297,16 +300,18 @@ fn connection_processor(outgoing_connection: *OutgoingConnection) void {
 fn discovery_reminder(discovery_period_sec: i64) void {
     while (true) {
         std.time.sleep(100000000 * discovery_period_sec);
+
+
     }
 }
 
 
 
-fn connection_manager(check_period_sec: i64) void {
+fn connection_manager(check_period_sec: u64) void {
     while (true) {
         std.time.sleep(100000000 * check_period_sec);
-        var check_connection_item = CheckConnectionWorkItem.init() catch unreachable;
-
+        var check_connection_item = CheckConnectionWorkItem.init(direct_allocator) catch unreachable;
+        work_queue.push(&check_connection_item.work_item) catch unreachable;
     }
 }
 
@@ -356,8 +361,10 @@ pub fn main() anyerror!void {
 
     var receiver_thread = try std.Thread.spawn(&bind_socket, receiver);
     var line_reader_thread = try std.Thread.spawn({}, line_reader);
-    var connection_thread = try std.Thread.spawn(outgoing_connections.ptrAt(0), connection_processor);
+    var manager_period: u64 = 4;
+    var connection_manager_thread = try std.Thread.spawn(manager_period, connection_manager);
 
+    var connection_thread = try std.Thread.spawn(outgoing_connections.ptrAt(0), connection_processor);
     
 
     // Main worker thread
@@ -366,6 +373,7 @@ pub fn main() anyerror!void {
     receiver_thread.wait();
     line_reader_thread.wait();
     worker_thread.wait();
+    connection_manager_thread.wait();
 
     warn("Binding to: {}, connecting to: {}", .{bind_point, connect_point});
 
