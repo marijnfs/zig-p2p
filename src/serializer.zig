@@ -20,7 +20,7 @@ pub const Deserializer = struct {
 
     pub fn deserialize(self: *Deserializer, comptime Type: type, buffer: []u8) !Type {
         var in_stream = std.io.fixedBufferStream(buffer).inStream();
-        var deserializer = std.io.Deserializer(.Little, .Byte, std.io.FixedBufferStream([]u8).InStream).init(in_stream);
+        var deserializer = std.io.DeserializerAllocate(.Little, .Byte, std.io.FixedBufferStream([]u8).InStream, std.heap.direct_allocator).init(in_stream);
         return try deserializer.deserialize(Type);
     }
 };

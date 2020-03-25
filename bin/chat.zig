@@ -100,7 +100,8 @@ const SendWorkItem = struct {
 
     fn process(work_item: *WorkItem) void {
         const self = @fieldParentPtr(SendWorkItem, "work_item", work_item);
-        // var serializer: Serializer = undefined;
+        var serializer: Serializer = undefined;
+        var buffer = serializer.serialize(self.chat) catch unreachable;
 
         var msg = Message.init_slice(self.chat.message) catch unreachable;
         var i: usize = 0;
