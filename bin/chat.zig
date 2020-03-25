@@ -3,8 +3,6 @@ const p2p = @import("p2p");
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 
-const Serializer = p2p.Serializer;
-const Deserializer = p2p.Deserializer;
 
 const testing = std.testing;
 const mem = std.mem;
@@ -36,25 +34,23 @@ fn blake_hash(data: []u8) [32]u8 {
 const Chat = struct {
     user: []u8,
     message: []u8,
-    allocator: *Allocator,
 
-    fn init(user: [:0]const u8, message: [:0]const u8, allocator: *Allocator) !Chat {
-        const user_buf = try allocator.alloc(u8, user.len);
+    fn init(user: [:0]const u8, message: [:0]const u8) !Chat {
+        const user_buf = try direct_allocator.alloc(u8, user.len);
         std.mem.copy(u8, user_buf, user);
 
-        const message_buf = try allocator.alloc(u8, message.len);
+        const message_buf = try direct_allocator.alloc(u8, message.len);
         std.mem.copy(u8, message_buf, message);
 
         return Chat{
             .user = user_buf,
             .message = message_buf,
-            .allocator = allocator,
         };
     }
 
     fn deinit(self: *Chat) void {
-        self.allocator.free(self.user);
-        self.allocator.free(self.message);
+        direct_allocator.free(self.user);
+        direct_allocator.free(self.message);
     }
 };
 
@@ -100,12 +96,12 @@ const SendWorkItem = struct {
 
     fn process(work_item: *WorkItem) void {
         const self = @fieldParentPtr(SendWorkItem, "work_item", work_item);
-        var serializer: Serializer = undefined;
-        var buffer = serializer.serialize(self.chat) catch unreachable;
+        var buffer = p2p.serialize(self.chat) catch unreachable;
+        defer buffer.deinit();
 
-        var msg = Message.init_slice(self.chat.message) catch unreachable;
         var i: usize = 0;
         while (i < outgoing_connections.len) : (i += 1) {
+            var msg = Message.init_slice(buffer.span()) catch unreachable;
             outgoing_connections.ptrAt(i).queue_message(msg) catch unreachable;
         }
     }
@@ -253,14 +249,16 @@ fn receiver(socket: *Socket) void {
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
 
-        //rsend response
+        //send response immediately
         var return_msg = Message.init();
         defer return_msg.deinit();
 
         var rc_send = socket.send(&return_msg);
 
         //setup work item and add to queue
-        var chat = Chat.init("incoming", buffer.span(), direct_allocator) catch unreachable;
+        var chat = p2p.deserialize(Chat, buffer.span(), direct_allocator) catch unreachable;
+
+        //var chat = Chat.init("incoming", buffer.span(), direct_allocator) catch unreachable;
 
         const hash = blake_hash(chat.message);
         var optional_kv = sent_map.put(hash, true) catch unreachable;
@@ -271,7 +269,7 @@ fn receiver(socket: *Socket) void {
         var present_work_item = PresentWorkItem.init(direct_allocator, chat) catch unreachable;
         work_queue.push(&present_work_item.work_item) catch unreachable;
 
-        var chat_copy = Chat.init("incoming", buffer.span(), direct_allocator) catch unreachable;
+        var chat_copy = Chat.init("incoming", buffer.span()) catch unreachable;
         var relay_work_item = RelayWorkItem.init(direct_allocator, chat_copy) catch unreachable;
         work_queue.push(&relay_work_item.work_item) catch unreachable;
     }
@@ -286,7 +284,7 @@ fn line_reader(arg: void) void {
         if (line.len == 0)
             continue;
         // set up chat
-        var chat = Chat.init("user", line[0..:0], direct_allocator) catch unreachable;
+        var chat = Chat.init(username, line[0..:0]) catch unreachable;
 
         // add work item to queue
         var send_work_item = SendWorkItem.init(direct_allocator, chat) catch unreachable;
@@ -392,16 +390,21 @@ pub fn init() !void {
     sent_map = std.AutoHashMap([32]u8, bool).init(direct_allocator);
 }
 
+var username: [:0] const u8 = undefined;
+
 pub fn main() anyerror!void {
     warn("Chat\n", .{});
     try init();
 
     var argv = std.os.argv;
-    if (argv.len < 3) {
-        std.debug.panic("Not enough arguments: usage {} [bind_point] [connect_point], e.g. bind_point = ipc:///tmp/dummy\n", .{argv[0]});
+    if (argv.len < 4) {
+        std.debug.panic("Not enough arguments: usage {} [bind_point] [connect_point] [username], e.g. bind_point = ipc:///tmp/dummy\n", .{argv[0]});
     }
     const bind_point = mem.toSliceConst(u8, argv[1]);
     const connect_point = mem.toSliceConst(u8, argv[2]);
+    username = mem.spanZ(argv[3]);
+
+    warn("Username: {}\n", .{username});
 
     bind_socket = Socket.init(context, c.ZMQ_REP);
     try bind_socket.bind(bind_point);

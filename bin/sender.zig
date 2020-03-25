@@ -3,8 +3,6 @@ const p2p = @import("p2p");
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 
-const Serializer = p2p.Serializer;
-const Deserializer = p2p.Deserializer;
 
 const testing = std.testing;
 const mem = std.mem;
@@ -34,8 +32,7 @@ pub fn main() anyerror!void {
     while (true) {
         {
             var bla = Bla{ .a = 2, .b = 4 };
-            var serializer: Serializer = undefined;
-            var buffer = try serializer.serialize(bla);
+            var buffer = try p2p.serialize(bla);
             warn("{}\n", .{buffer});
             defer buffer.deinit();
             var message = try Message.init_slice(buffer.span());
