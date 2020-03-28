@@ -27,12 +27,15 @@ pub const Socket = struct {
     }
 
     pub fn connect(self: *Socket, endpoint: [:0]const u8) !void {
+        std.debug.warn("connecting to: {}\n", .{endpoint});
+
         const rc = c.zmq_connect(self.socket, endpoint);
         if (rc == -1)
             return error.ConnectionFailed;
     }
 
     pub fn bind(self: *Socket, endpoint: [:0]const u8) !void {
+        std.debug.warn("binding to: {}\n", .{endpoint});
         const rc = c.zmq_bind(self.socket, endpoint);
         if (rc == -1)
             return error.ConnectionFailed;
