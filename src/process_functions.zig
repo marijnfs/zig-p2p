@@ -5,10 +5,12 @@ const Message = p2p.Message;
 const Chat = p2p.Chat;
 const cm = p2p.connection_management;
 const work = p2p.work;
-
 const direct_allocator = std.heap.direct_allocator;
-
 const c = p2p.c;
+
+
+const warn = std.debug.warn;
+
 
 var sent_map: std.AutoHashMap([32]u8, bool) = undefined;
 
@@ -64,16 +66,18 @@ pub fn receiver(socket: *Socket) void {
         defer msg.deinit();
         var rc_recv = socket.recv(&msg);
         
-        msg.get_peer();
+        var ip = msg.get_peer_ip4();
+
+        warn("ip: {x}\n", .{ip});
         //const fd = c.zmq_msg_get(@ptrCast([*c]c.struct_zmq_msg_t, &msg.msg), c.ZMQ_SRCFD);
         const fd = c.zmq_msg_get(&msg.msg, c.ZMQ_SRCFD);
 
         if (fd != -1) {
             var addr: c.sockaddr = undefined;
             var len: c_uint = 0;
-            std.debug.warn("peername: {x}\n", .{addr.sa_data});
+            warn("peername: {x}\n", .{addr.sa_data});
             var result = c.getpeername (fd, &addr, &len);
-            std.debug.warn("peername: {x}\n", .{addr.sa_data});
+            warn("peername: {x}\n", .{addr.sa_data});
         }
 
         var buffer = msg.get_buffer() catch unreachable;
