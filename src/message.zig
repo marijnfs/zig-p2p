@@ -37,6 +37,14 @@ pub const Message = struct {
 
     pub fn get_peer(self: *Message) void {
         const fd = c.zmq_msg_get(&self.msg, c.ZMQ_SRCFD);
+        
+        var addr: c.sockaddr = undefined;
+        var len: c_uint = 0;
+        std.debug.warn("peername: {x}\n", .{addr.sa_data});
+        var result = c.getpeername (fd, &addr, &len);
+        std.debug.warn("fd: {}, res: {}:{}, {}\n", .{fd, result, len, addr});
+
+        std.debug.warn("peername: {x}\n", .{addr.sa_data});
     }
 
     // returns copy of data in a buffer, buffer must be deinit()
