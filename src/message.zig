@@ -35,6 +35,10 @@ pub const Message = struct {
         _ = c.zmq_msg_close(&self.msg);
     }
 
+    pub fn get_peer(self: *Message) void {
+        const fd = c.zmq_msg_get(&self.msg, c.ZMQ_SRCFD);
+    }
+
     // returns copy of data in a buffer, buffer must be deinit()
     pub fn get_buffer(self: *Message) !std.Buffer {
         var ptr = c.zmq_msg_data(&self.msg);

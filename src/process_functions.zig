@@ -8,6 +8,11 @@ const work = p2p.work;
 
 const direct_allocator = std.heap.direct_allocator;
 
+const c = @cImport({
+    @cInclude("zmq.h");
+    @cInclude("sys/socket.h");
+});
+
 var sent_map: std.AutoHashMap([32]u8, bool) = undefined;
 
 pub fn init() void {
@@ -61,6 +66,16 @@ pub fn receiver(socket: *Socket) void {
         var msg = Message.init();
         defer msg.deinit();
         var rc_recv = socket.recv(&msg);
+        
+        msg.get_peer();
+        const fd = c.zmq_msg_get(@ptrCast([*c]c.struct_zmq_msg_t, &msg.msg), c.ZMQ_SRCFD);
+        if (fd != -1) {
+            var addr: c.sockaddr = undefined;
+            var len: c_uint = 0;
+            std.debug.warn("peername: {x}\n", .{addr.sa_data});
+            var result = c.getpeername (fd, &addr, &len);
+            std.debug.warn("peername: {x}\n", .{addr.sa_data});
+        }
 
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
