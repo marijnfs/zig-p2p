@@ -1,44 +1,84 @@
 const std = @import("std");
 
-const Bla = struct {
-    a: i64, b: f64
-};
-
-pub const Serializer = struct {
-    buffer: std.Buffer,
-
-    pub fn init() !Serializer {
-        return Serializer{
-            .buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0),
-        };
-    }
-
-    pub fn deinit(self: *Serializer) void {
-        self.buffer.deinit();
-    }
-
-    pub fn serialize(self: *Serializer, value: var) !void {
-        var stream = self.buffer.outStream();
-        try std.io.Serializer(.Little, .Byte, @TypeOf(stream)).init(stream).serialize(value);
-    }
-};
 
 pub fn main() !void {
-    //Direct code
-    var buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0);
-    var buffered_stream = buffer.outStream();
+    try testArrayTypes();
+}
 
-    var std_serializer = std.io.Serializer(.Little, .Byte, @TypeOf(buffered_stream)).init(buffered_stream);
+pub fn testArrayTypes() !void {
+    var allocator = std.heap.direct_allocator;
 
-    var bla = Bla{ .a = 1, .b = 2.0 };
-    try std_serializer.serialize(bla);
+    const PackedStruct = struct {
+        f_i3: i3,
+        f_u2: u2,
+    };
 
-    //through struct
-    var my_serializer = try Serializer.init();
-    defer my_serializer.deinit();
+    const ArrayTypes = struct {
+        arrayType: [10]u8,
+        ptrArrayType: []u8,
+        arraySentinelType: [4:0]u8,
+        ptrArraySentinelType: [:0]u8,
+        ptrType: *PackedStruct,
 
-    try my_serializer.serialize(bla); //ok
+        fn deinit(self: *Self) void {
+            std.heap.direct_allocator.free(self.ptrArrayType);
+            std.heap.direct_allocator.destroy(self.ptrType);
+        }
 
-    std.debug.warn("first:  {x}\n", .{buffer.toSliceConst()});
-    std.debug.warn("second: {x}\n", .{my_serializer.buffer.toSliceConst()});
+        const Self = @This();
+    };
+
+    var my_array_types = ArrayTypes {
+        .arrayType = [10]u8{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+        .ptrArrayType = try allocator.alloc(u8, 5),
+        .arraySentinelType = [4:0]u8 {0, 1, 2, 3},
+        .ptrArraySentinelType = (try allocator.alloc(u8, 5))[0..:0],
+        .ptrType = try allocator.create(PackedStruct),
+    };
+    for (my_array_types.ptrArrayType) |*item, i| {
+        item.*= @intCast(u8, i);
+    }
+    for (my_array_types.ptrArraySentinelType) |*item, i| {
+        item.*= @intCast(u8, i);
+    }
+    my_array_types.ptrType.* = PackedStruct{.f_i3 = 2, .f_u2 = 3};
+    defer my_array_types.deinit();
+
+    var buffer = try std.Buffer.initSize(allocator, 0);
+    defer buffer.deinit();
+
+    var stream = buffer.outStream();
+    var serializer = std.io.serializer_allocate(.Little, .Byte, stream);
+    try serializer.serialize(my_array_types);
+    try serializer.flush();
+
+
+    var in_stream = std.io.fixedBufferStream(buffer.span()).inStream();
+    var deserializer = std.io.deserializer_allocate(.Little, .Byte, in_stream, allocator);
+
+    var my_array_types_copy = try deserializer.deserialize(ArrayTypes);
+    defer my_array_types_copy.deinit();
+
+
+    for (my_array_types.arrayType) |v| {
+        std.debug.warn("{}\n", .{v});
+    }
+    for (my_array_types.ptrArrayType) |v| {
+        std.debug.warn("{}\n", .{v});
+    }
+    std.debug.warn("{}\n", .{my_array_types.ptrType});
+
+    for (my_array_types_copy.arrayType) |v| {
+        std.debug.warn("{}\n", .{v});
+    }
+    for (my_array_types_copy.ptrArrayType) |v| {
+        std.debug.warn("{}\n", .{v});
+    }
+    for (my_array_types_copy.arraySentinelType) |v| {
+        std.debug.warn("{}\n", .{v});
+    }
+    for (my_array_types_copy.ptrArraySentinelType) |v| {
+        std.debug.warn("{}\n", .{v});
+    }
+    std.debug.warn("{}\n", .{my_array_types_copy.ptrType});
 }
