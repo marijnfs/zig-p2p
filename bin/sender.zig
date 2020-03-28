@@ -11,10 +11,7 @@ const Allocator = mem.Allocator;
 const warn = std.debug.warn;
 const direct_allocator = std.heap.direct_allocator;
 
-const c = @cImport({
-    @cInclude("zmq.h");
-    @cInclude("monocypher.h");
-});
+const c = p2p.c;
 
 const Bla = struct {
     a: i64,

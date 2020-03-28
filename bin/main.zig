@@ -4,10 +4,7 @@ const Socket = p2p.Socket;
 const Message = p2p.Message;
 
 const warn = std.debug.warn;
-const c = @cImport({
-    @cInclude("zmq.h");
-    @cInclude("monocypher.h");
-});
+const c = p2p.c;
 
 const Bla = struct {
     a: i64,

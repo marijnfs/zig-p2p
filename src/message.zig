@@ -1,13 +1,13 @@
 const std = @import("std");
+const p2p = @import("p2p.zig");
+
 const testing = std.testing;
 const mem = std.mem;
 const Allocator = mem.Allocator;
 
 const direct_allocator = std.heap.direct_allocator;
 const warn = std.debug.warn;
-const c = @cImport({
-    @cInclude("zmq.h");
-});
+const c = p2p.c;
 
 pub const Message = struct {
     msg: c.zmq_msg_t,

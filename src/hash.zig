@@ -1,9 +1,8 @@
 const std = @import("std");
+const p2p = @import("p2p.zig");
 const mem = std.mem;
 
-const c = @cImport({
-    @cInclude("monocypher.h");
-});
+const c = p2p.c;
 
 pub fn blake_hash_allocate(data: []u8, allocator: *mem.Allocator) ![]u8 {
     const key_size = 32;

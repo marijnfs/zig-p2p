@@ -8,10 +8,7 @@ const work = p2p.work;
 
 const direct_allocator = std.heap.direct_allocator;
 
-const c = @cImport({
-    @cInclude("zmq.h");
-    @cInclude("sys/socket.h");
-});
+const c = p2p.c;
 
 var sent_map: std.AutoHashMap([32]u8, bool) = undefined;
 
@@ -68,7 +65,9 @@ pub fn receiver(socket: *Socket) void {
         var rc_recv = socket.recv(&msg);
         
         msg.get_peer();
-        const fd = c.zmq_msg_get(@ptrCast([*c]c.struct_zmq_msg_t, &msg.msg), c.ZMQ_SRCFD);
+        //const fd = c.zmq_msg_get(@ptrCast([*c]c.struct_zmq_msg_t, &msg.msg), c.ZMQ_SRCFD);
+        const fd = c.zmq_msg_get(&msg.msg, c.ZMQ_SRCFD);
+
         if (fd != -1) {
             var addr: c.sockaddr = undefined;
             var len: c_uint = 0;

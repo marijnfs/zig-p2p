@@ -11,6 +11,8 @@ pub const blake_hash = @import("hash.zig").blake_hash;
 pub const blake_hash_allocate = @import("hash.zig").blake_hash_allocate;
 pub const process_functions = @import("process_functions.zig");
 
+pub const c = @import("c.zig").c;
+
 pub fn init() void {
     process_functions.init();
     connection_management.init();

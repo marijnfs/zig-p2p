@@ -1,4 +1,6 @@
 const std = @import("std");
+const p2p = @import("p2p.zig");
+
 const Message = @import("message.zig").Message;
 
 const testing = std.testing;
@@ -7,9 +9,7 @@ const Allocator = mem.Allocator;
 
 const direct_allocator = std.heap.direct_allocator;
 
-const c = @cImport({
-    @cInclude("zmq.h");
-});
+const c = p2p.c;
 
 pub const Socket = struct {
     socket_type: c_int,

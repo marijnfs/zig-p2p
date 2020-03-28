@@ -15,11 +15,7 @@ const functions = p2p.process_functions;
 const warn = std.debug.warn;
 const direct_allocator = std.heap.direct_allocator;
 
-const c = @cImport({
-    @cInclude("zmq.h");
-});
-
-
+const c = p2p.c;
 
 
 var bind_socket: Socket = undefined;

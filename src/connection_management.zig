@@ -15,9 +15,7 @@ pub var known_addresses: std.ArrayList([:0]u8) = undefined;
 var PRNG = std.rand.DefaultPrng.init(0);
 
 
-const c = @cImport({
-    @cInclude("zmq.h");
-});
+const c = p2p.c;
 
 
 pub fn init() void {
