@@ -53,10 +53,11 @@ pub const OutgoingConnection = struct {
     active: bool
 };
 
-pub fn ip4_to_zeromq(ip: [4]u8, port: i64) ![100]u8 {
+pub fn ip4_to_zeromq(ip: [4]u8, port: i64) !std.Buffer {
     var buf: [100]u8 = undefined;
-    _ = try fmt.bufPrint(buf[0..], "tcp://{}.{}.{}.{}:{}\n", .{ip[0], ip[1], ip[2], ip[3], port});
-    return buf;
+    const buf_printed = try fmt.bufPrint(buf[0..], "tcp://{}.{}.{}.{}:{}\n", .{ip[0], ip[1], ip[2], ip[3], port});
+    var buffer = try std.Buffer.init(std.heap.direct_allocator, buf_printed);
+    return buffer;
 }
 
 // pub fn get_addr(fd: c_int) void {

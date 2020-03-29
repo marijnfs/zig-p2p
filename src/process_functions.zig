@@ -69,7 +69,8 @@ pub fn receiver(socket: *Socket) void {
         var rc_recv = socket.recv(&msg);
         
         var ip = msg.get_peer_ip4();
-        warn("ip: {x} {s}\n", .{ip, cm.ip4_to_zeromq(ip, 4040)});
+        var ip_buffer = cm.ip4_to_zeromq(ip, 4040) catch unreachable;
+        warn("ip: {s}\n", .{ip_buffer.span()});
 
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
@@ -80,14 +81,7 @@ pub fn receiver(socket: *Socket) void {
 
         var rc_send = socket.send(&return_msg);
 
-        //setup work item and add to queue
-
-        // const f = comptime struct { fn bla(i: i64, s: ) void {
-        //     warn("i: {}\n", .{i});
-        //     try s.deserialize(Chat);
-        //    }
-        // };
-
+        // get chat
         var chat = p2p.deserialize_tagged(Chat, buffer.span(), direct_allocator) catch unreachable;
 
         const hash = p2p.blake_hash(chat.message);

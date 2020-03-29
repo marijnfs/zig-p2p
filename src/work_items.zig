@@ -37,7 +37,6 @@ pub const PresentWorkItem = make_work_item(Chat, present_process);
 
 
 pub fn relay_process(chat: *Chat) void {
-    std.debug.warn("Relay chat {}: {}\n", .{ chat.user, chat.message });
     var buffer = p2p.serialize_tagged(10, chat) catch unreachable;
     defer buffer.deinit();
 

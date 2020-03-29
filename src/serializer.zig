@@ -35,8 +35,6 @@ pub fn deserialize_tagged(comptime T: type, buffer: []u8, allocator: *std.mem.Al
 
     var deserializer = std.io.deserializer_allocate(.Little, .Byte, in_stream, allocator);
     var obj_type = try deserializer.deserialize(i64);
-    std.debug.warn("Type: {}\n", .{obj_type});
-    // callback(obj_type);
     var obj = try deserializer.deserialize(T);
     return obj;
 }
