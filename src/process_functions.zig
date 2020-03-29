@@ -55,7 +55,7 @@ pub fn discovery_reminder(discovery_period_sec: i64) void {
 pub fn connection_manager_reminder(check_period_sec: u64) void {
     while (true) {
         std.time.sleep(100000000 * check_period_sec);
-        var check_connection_item = wi.CheckConnectionWorkItem.init(direct_allocator) catch unreachable;
+        var check_connection_item = wi.CheckConnectionWorkItem.init(direct_allocator, .{}) catch unreachable;
         work.work_queue.push(&check_connection_item.work_item) catch unreachable;
     }
 }
@@ -104,6 +104,7 @@ pub fn receiver(socket: *Socket) void {
         work.work_queue.push(&relay_work_item.work_item) catch unreachable;
     }
 }
+
 
 // Line reader to read lines from standard in
 pub fn line_reader(username: [:0]const u8) void {

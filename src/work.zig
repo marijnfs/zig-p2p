@@ -20,14 +20,60 @@ pub const WorkItem = struct {
         work_item.process_fn(work_item);
     }
 
+    pub fn free(work_item: *WorkItem) void {
+        work_item.free_fn(work_item);
+    }
+
     deinit_fn: fn (work_item: *WorkItem) void,
-    process_fn: fn (work_item: *WorkItem) void
+    process_fn: fn (work_item: *WorkItem) void,
+    free_fn: fn (work_item: *WorkItem, allocator: *Allocator) void
 };
 
 pub var work_queue: p2p.AtomicQueue(*WorkItem) = undefined;
 
 pub fn init() void {
     work_queue = p2p.AtomicQueue(*WorkItem).init(direct_allocator);
+}
+
+pub const DummyWorkData = struct {
+    fn deinit(self: *DummyWorkData) void {}
+};
+
+pub fn make_work_item(comptime WorkType: type, work_function: fn (data: *WorkType) void) type {
+    return struct {
+        const Self = @This();
+        work_data: WorkType,
+        work_item: WorkItem,
+
+        pub fn init(allocator: *Allocator, work_data: WorkType) !*Self {
+            var work_type = try allocator.create(Self);
+            work_type.work_data = work_data;
+            work_type.work_item = .{.process_fn = process,
+                                    .deinit_fn = deinit,
+                                    .free_fn = free,
+                                };
+
+
+            return work_type;
+        }
+
+        pub fn free(work_item: *WorkItem, allocator: *Allocator) void {
+            const self = @fieldParentPtr(Self, "work_item", work_item);
+            allocator.destroy(self);
+        }
+
+        pub fn deinit(work_item: *WorkItem) void {
+            const self = @fieldParentPtr(Self, "work_item", work_item);
+            if (comptime std.meta.trait.hasFn("deinit")(Self))
+                self.work_data.deinit();
+        }
+
+        pub fn process(work_item: *WorkItem) void {
+            const self = @fieldParentPtr(Self, "work_item", work_item);
+            work_function(&self.work_data);
+
+        }
+    };
 }
 
 //Main worker function, grabbing work items and processing them
