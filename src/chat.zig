@@ -24,4 +24,14 @@ pub const Chat = struct {
         default_allocator.free(self.user);
         default_allocator.free(self.message);
     }
+
+    pub fn copy(self: *Chat) !Chat {
+        const user_buf = try mem.dupe(default_allocator, u8, self.user);
+        const message_buf = try mem.dupe(default_allocator, u8, self.message);
+        return Chat{
+            .user = user_buf,
+            .message = message_buf,
+        };
+
+    }
 };

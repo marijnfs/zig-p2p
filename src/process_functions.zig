@@ -99,7 +99,7 @@ pub fn receiver(socket: *Socket) void {
         var present_work_item = wi.PresentWorkItem.init(direct_allocator, chat) catch unreachable;
         work.work_queue.push(&present_work_item.work_item) catch unreachable;
 
-        var chat_copy = Chat.init("incoming", buffer.span()) catch unreachable;
+        var chat_copy = chat.copy() catch unreachable;
         var relay_work_item = wi.RelayWorkItem.init(direct_allocator, chat_copy) catch unreachable;
         work.work_queue.push(&relay_work_item.work_item) catch unreachable;
     }
