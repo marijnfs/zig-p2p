@@ -4,6 +4,8 @@ const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
 const cm = p2p.connection_management;
+const wi = p2p.work_items;
+
 const work = p2p.work;
 const direct_allocator = std.heap.direct_allocator;
 const c = p2p.c;
@@ -53,7 +55,7 @@ pub fn discovery_reminder(discovery_period_sec: i64) void {
 pub fn connection_manager_reminder(check_period_sec: u64) void {
     while (true) {
         std.time.sleep(100000000 * check_period_sec);
-        var check_connection_item = cm.CheckConnectionWorkItem.init(direct_allocator) catch unreachable;
+        var check_connection_item = wi.CheckConnectionWorkItem.init(direct_allocator) catch unreachable;
         work.work_queue.push(&check_connection_item.work_item) catch unreachable;
     }
 }
@@ -100,11 +102,11 @@ pub fn receiver(socket: *Socket) void {
             continue;
         }
 
-        var present_work_item = cm.PresentWorkItem.init(direct_allocator, chat) catch unreachable;
+        var present_work_item = wi.PresentWorkItem.init(direct_allocator, chat) catch unreachable;
         work.work_queue.push(&present_work_item.work_item) catch unreachable;
 
         var chat_copy = Chat.init("incoming", buffer.span()) catch unreachable;
-        var relay_work_item = cm.RelayWorkItem.init(direct_allocator, chat_copy) catch unreachable;
+        var relay_work_item = wi.RelayWorkItem.init(direct_allocator, chat_copy) catch unreachable;
         work.work_queue.push(&relay_work_item.work_item) catch unreachable;
     }
 }
@@ -122,7 +124,7 @@ pub fn line_reader(username: [:0]const u8) void {
         var chat = Chat.init(username, line[0..:0]) catch unreachable;
 
         // add work item to queue
-        var send_work_item = cm.SendWorkItem.init(direct_allocator, chat) catch unreachable;
+        var send_work_item = wi.SendWorkItem.init(direct_allocator, chat) catch unreachable;
         work.work_queue.push(&send_work_item.work_item) catch unreachable;
     }
 }
