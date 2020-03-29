@@ -118,7 +118,7 @@ pub fn line_reader(username: [:0]const u8) void {
         if (line.len == 0)
             continue;
         // set up chat
-        var chat = Chat.init(username, line[0..:0]) catch unreachable;
+        var chat = Chat.init(username, line[0..:0], std.time.timestamp()) catch unreachable;
 
         // add work item to queue
         var send_work_item = wi.SendChatWorkItem.init(direct_allocator, chat) catch unreachable;

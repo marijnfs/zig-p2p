@@ -6,8 +6,9 @@ const default_allocator = std.heap.direct_allocator;
 pub const Chat = struct {
     user: []u8,
     message: []u8,
+    timestamp: u64,
 
-    pub fn init(user: [:0]const u8, message: [:0]const u8) !Chat {
+    pub fn init(user: [:0]const u8, message: [:0]const u8, timestamp: u64) !Chat {
         const user_buf = try default_allocator.alloc(u8, user.len);
         std.mem.copy(u8, user_buf, user);
 
@@ -17,6 +18,7 @@ pub const Chat = struct {
         return Chat{
             .user = user_buf,
             .message = message_buf,
+            .timestamp = timestamp,
         };
     }
 
@@ -31,6 +33,7 @@ pub const Chat = struct {
         return Chat{
             .user = user_buf,
             .message = message_buf,
+            .timestamp = self.timestamp,
         };
 
     }
