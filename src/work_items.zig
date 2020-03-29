@@ -47,7 +47,8 @@ pub const RelayWorkItem = make_work_item(Chat, relay_callback);
 const AddConnectionData = std.Buffer;
 
 fn add_connection_callback(conn_data: *AddConnectionData) void {
-    var outgoing_connection = cm.OutgoingConnection.init(conn_data.span()) catch unreachable;
+    std.debug.warn("conn data: {}\n", .{conn_data.span()});
+    var outgoing_connection = cm.OutgoingConnection.init(conn_data.span()) catch return;
 
     //Say hello
     var buffer = p2p.serialize_tagged(0, @as(i64, 0)) catch unreachable;
@@ -59,8 +60,20 @@ fn add_connection_callback(conn_data: *AddConnectionData) void {
     var connection_thread = std.Thread.spawn(cm.outgoing_connections.ptrAt(0), functions.connection_processor) catch unreachable;
     cm.connection_threads.append(connection_thread) catch unreachable;
 }
-
 pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
+
+
+const AddKnownAddressData = std.Buffer;
+fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
+    for (cm.known_addresses.span()) |addr| {
+        if (std.mem.eql(u8, addr.span(), conn_data.span()))
+            return;
+    }
+    std.debug.warn("Adding: {s}\n", .{conn_data.span()});
+    cm.known_addresses.append(std.Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
+}
+pub const AddKnownAddressWorkItem = make_work_item(AddKnownAddressData, add_known_address_callback);
+
 
 pub fn check_connection_callback(data: *work.DummyWorkData) void {
     var i: usize = 0;
@@ -76,24 +89,27 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
         }
     }
 
-    const K: usize = 8;
+    const K: usize = 4;
+
     if (cm.known_addresses.len > cm.outgoing_connections.len) {
         var n: usize = 0;
-        while (n < K and cm.outgoing_connections.len < K) {
+        while (n < 1 and cm.outgoing_connections.len < K) : (n += 1) {
             var selection = PRNG.random.uintLessThan(usize, cm.known_addresses.len);
-            var selected_address = cm.known_addresses.at(selection);
+            std.debug.warn("selection: {}/{}\n", .{selection, cm.known_addresses.len});
+            var selected_address = cm.known_addresses.ptrAt(selection);
 
             var found: bool = false;
             for (cm.outgoing_connections.span()) |*conn| {
-                if (std.mem.eql(u8, conn.connect_point.span(), selected_address)) {
+                if (std.mem.eql(u8, conn.connect_point.span(), selected_address.span())) {
                     found = true;
                     break;
                 }
             }
             if (found) continue;
+            std.debug.warn("add item for: {s}\n", .{selected_address.span()});
 
-            var outgoing_connection = cm.OutgoingConnection.init(selected_address) catch unreachable;
-            cm.outgoing_connections.append(outgoing_connection) catch unreachable;
+            var work_item = AddConnectionWorkItem.init(direct_allocator, std.Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
+            work.queue_work_item(work_item) catch unreachable;
         }
     }
     // outgoing_connections

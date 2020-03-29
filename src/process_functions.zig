@@ -54,7 +54,7 @@ pub fn discovery_reminder(discovery_period_sec: i64) void {
 // Thread that intermittently adds a connection management task
 pub fn connection_manager_reminder(check_period_sec: u64) void {
     while (true) {
-        std.time.sleep(100000000 * check_period_sec);
+        std.time.sleep(400000000);
         var check_connection_item = wi.CheckConnectionWorkItem.init(direct_allocator, .{}) catch unreachable;
         work.work_queue.push(&check_connection_item.work_item) catch unreachable;
     }
@@ -83,11 +83,16 @@ pub fn receiver(socket: *Socket) void {
 
         var tag = deserializer.tag() catch unreachable;
         if (tag == 0) {
+            warn("got hello\n", .{});
             var ip = msg.get_peer_ip4();
             var ip_buffer = cm.ip4_to_zeromq(ip, 4040) catch unreachable;
+
+            var work_item = wi.AddKnownAddressWorkItem.init(direct_allocator, ip_buffer) catch unreachable;
+            work.queue_work_item(work_item) catch unreachable;
             warn("ip: {s}\n", .{ip_buffer.span()});
         }
         if (tag == 1) {
+            warn("got chat\n", .{});
             var chat = deserializer.deserialize(Chat) catch unreachable;
             const hash = p2p.blake_hash(chat.message);
             var optional_kv = sent_map.put(hash, true) catch unreachable;

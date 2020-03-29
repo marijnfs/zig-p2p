@@ -37,9 +37,9 @@ pub fn main() anyerror!void {
     }
     username = mem.spanZ(argv[1]);
 
-    const bind_point = mem.toSliceConst(u8, argv[2]);
+    const bind_point = mem.spanZ(argv[2]);
     for (argv[3..]) |connect_point_arg| {
-        const connect_point = mem.toSliceConst(u8, connect_point_arg);
+        const connect_point = mem.spanZ(connect_point_arg);
         var work_item = try wi.AddConnectionWorkItem.init(direct_allocator, std.Buffer.init(direct_allocator, connect_point) catch unreachable);
         try work.queue_work_item(work_item);
     }

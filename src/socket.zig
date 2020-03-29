@@ -30,6 +30,8 @@ pub const Socket = struct {
         std.debug.warn("connecting to: {}\n", .{endpoint});
 
         const rc = c.zmq_connect(self.socket, endpoint);
+        std.debug.warn("rc: {}\n", .{rc});
+
         if (rc == -1)
             return error.ConnectionFailed;
     }

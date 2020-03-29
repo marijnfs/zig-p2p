@@ -12,7 +12,7 @@ const WorkItem = p2p.work.WorkItem;
 
 pub var context: ?*c_void = undefined; //zmq context
 pub var outgoing_connections: std.ArrayList(OutgoingConnection) = undefined;
-pub var known_addresses: std.ArrayList([:0]u8) = undefined;
+pub var known_addresses: std.ArrayList(std.Buffer) = undefined;
 pub var connection_threads: std.ArrayList(*std.Thread) = undefined;
 
 
@@ -24,7 +24,7 @@ pub fn init() void {
 
     outgoing_connections = std.ArrayList(OutgoingConnection).init(direct_allocator);
     connection_threads = std.ArrayList(*std.Thread).init(direct_allocator);
-    known_addresses = std.ArrayList([:0]u8).init(direct_allocator);
+    known_addresses = std.ArrayList(std.Buffer).init(direct_allocator);
 }
 
 pub const OutgoingConnection = struct {
@@ -58,7 +58,9 @@ pub const OutgoingConnection = struct {
 
 pub fn ip4_to_zeromq(ip: [4]u8, port: i64) !std.Buffer {
     var buf: [100]u8 = undefined;
-    const buf_printed = try fmt.bufPrint(buf[0..], "tcp://{}.{}.{}.{}:{}\n", .{ip[0], ip[1], ip[2], ip[3], port});
-    var buffer = try std.Buffer.init(std.heap.direct_allocator, buf_printed);
+
+    const buf_printed = try fmt.allocPrint(direct_allocator, "tcp://{}.{}.{}.{}:{}", .{ip[0], ip[1], ip[2], ip[3], port});
+    defer direct_allocator.free(buf_printed);
+    var buffer = try std.Buffer.init(direct_allocator, buf_printed);
     return buffer;
 }
