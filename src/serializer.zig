@@ -1,6 +1,8 @@
 const std = @import("std");
 const serializer_allocate = @import("serialization_allocate.zig").serializer_allocate;
 const deserializer_allocate = @import("serialization_allocate.zig").deserializer_allocate;
+const DeserializerAllocate = @import("serialization_allocate.zig").DeserializerAllocate;
+
 
 pub fn serialize(value: var) !std.Buffer {
     var buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0);
@@ -29,13 +31,39 @@ pub fn serialize_tagged(tag: u64, value: var) !std.Buffer {
     return buffer;
 }
 
-const Callback = fn (i64, std.io.Deserializer(.Little, .Byte, @typeOf(in_stream))) void;
 
-pub fn deserialize_tagged(comptime T: type, buffer: []u8, allocator: *std.mem.Allocator) !T {
-    var in_stream = std.io.fixedBufferStream(buffer).inStream();
+const FixedBufferStream = std.io.FixedBufferStream([]u8).InStream;
+const DeserializerAllocateType = DeserializerAllocate(.Little, .Byte, FixedBufferStream);
 
-    var deserializer = deserializer_allocate(.Little, .Byte, in_stream, allocator);
-    var obj_type = try deserializer.deserialize(i64);
-    var obj = try deserializer.deserialize(T);
-    return obj;
+const DeserializerTagged = struct {
+    const Self = @This();
+
+    in_stream: FixedBufferStream,
+    deserializer: DeserializerAllocateType,
+
+    pub fn init(buffer: []u8, allocator: *std.mem.Allocator) Self {
+        var in_stream = std.io.fixedBufferStream(buffer).inStream();
+        return .{
+            .in_stream = in_stream,
+            .deserializer = deserializer_allocate(.Little, .Byte, in_stream, allocator),
+
+        };
+    }
+
+    pub fn deinit(self: *Self) void {
+    }
+
+    pub fn tag(self: *Self) !i64 {
+        var tag_value = try self.deserializer.deserialize(i64);
+        return tag_value;
+    }
+
+    pub fn deserialize(self: *Self, comptime T: type) !T {
+        var obj = try self.deserializer.deserialize(T);
+        return obj;
+    }
+};
+
+pub fn deserialize_tagged(buffer: []u8, allocator: *std.mem.Allocator) DeserializerTagged {
+    return DeserializerTagged.init(buffer, allocator);
 }

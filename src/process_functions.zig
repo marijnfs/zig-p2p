@@ -82,8 +82,11 @@ pub fn receiver(socket: *Socket) void {
         var rc_send = socket.send(&return_msg);
 
         // get chat
-        var chat = p2p.deserialize_tagged(Chat, buffer.span(), direct_allocator) catch unreachable;
+        var deserializer = p2p.deserialize_tagged(buffer.span(), direct_allocator);
+        defer deserializer.deinit();
 
+        var tag = deserializer.tag() catch unreachable;
+        var chat = deserializer.deserialize(Chat) catch unreachable;
         const hash = p2p.blake_hash(chat.message);
         var optional_kv = sent_map.put(hash, true) catch unreachable;
         if (optional_kv) |kv| {
