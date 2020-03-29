@@ -59,15 +59,3 @@ pub fn ip4_to_zeromq(ip: [4]u8, port: i64) !std.Buffer {
     var buffer = try std.Buffer.init(std.heap.direct_allocator, buf_printed);
     return buffer;
 }
-
-// pub fn get_addr(fd: c_int) void {
-//     var ift: c.ifreq = undefined;
-//     ift.ifr_addr.sa_family = c.AF_INET;
-
-//     // var interface = "eth0";
-//     // std.mem.copy(u8, ifr.ifr_name[0..interface.len], interface);
-//     c.ioctl(fd, SIOCGIFADDR, &ifr);
-//     std.debug.warn("{}\n", .{inet_ntoa(@ptrCast(c.sockaddr_in, &ifr.ifr_addr).sin_addr)});
-// }
-
-// Work item to send a chat to all outgoing connections

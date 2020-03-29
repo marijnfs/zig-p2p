@@ -38,29 +38,31 @@ const DeserializerAllocateType = DeserializerAllocate(.Little, .Byte, FixedBuffe
 const DeserializerTagged = struct {
     const Self = @This();
 
-    in_stream: FixedBufferStream,
-    deserializer: DeserializerAllocateType,
+    buffer: std.io.FixedBufferStream([]u8),
+    allocator: *std.mem.Allocator,
 
     pub fn init(buffer: []u8, allocator: *std.mem.Allocator) Self {
         std.debug.warn("Start from buffer len: {}\n", .{buffer.len});
-        var in_stream = std.io.fixedBufferStream(buffer).inStream();
-        return .{
-            .in_stream = in_stream,
-            .deserializer = deserializer_allocate(.Little, .Byte, in_stream, allocator),
-
+        var deserializer_tagged = DeserializerTagged {
+            .buffer = std.io.fixedBufferStream(buffer),
+            .allocator = allocator,
         };
+
+        return deserializer_tagged;
     }
 
     pub fn deinit(self: *Self) void {
     }
 
     pub fn tag(self: *Self) !i64 {
-        var tag_value = try self.deserializer.deserialize(i64);
+        var deserializer = deserializer_allocate(.Little, .Byte, self.buffer.inStream(), self.allocator);
+        var tag_value = try deserializer.deserialize(i64);
         return tag_value;
     }
 
     pub fn deserialize(self: *Self, comptime T: type) !T {
-        var obj = try self.deserializer.deserialize(T);
+        var deserializer = deserializer_allocate(.Little, .Byte, self.buffer.inStream(), self.allocator);
+        var obj = try deserializer.deserialize(T);
         return obj;
     }
 };
