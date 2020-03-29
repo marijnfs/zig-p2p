@@ -38,9 +38,11 @@ pub const PresentWorkItem = make_work_item(Chat, present_process);
 
 pub fn relay_process(chat: *Chat) void {
     std.debug.warn("Relay chat {}: {}\n", .{ chat.user, chat.message });
+    var buffer = p2p.serialize_tagged(10, chat) catch unreachable;
+    defer buffer.deinit();
 
     for (cm.outgoing_connections.span()) |*conn| {
-        var msg = Message.init_slice(chat.message) catch unreachable;
+        var msg = Message.init_slice(buffer.span()) catch unreachable;
         conn.queue_message(msg) catch unreachable;
     }
 }
