@@ -67,10 +67,6 @@ pub fn receiver(socket: *Socket) void {
         var msg = Message.init();
         defer msg.deinit();
         var rc_recv = socket.recv(&msg);
-        
-        var ip = msg.get_peer_ip4();
-        var ip_buffer = cm.ip4_to_zeromq(ip, 4040) catch unreachable;
-        warn("ip: {s}\n", .{ip_buffer.span()});
 
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
@@ -87,7 +83,9 @@ pub fn receiver(socket: *Socket) void {
 
         var tag = deserializer.tag() catch unreachable;
         if (tag == 0) {
-
+            var ip = msg.get_peer_ip4();
+            var ip_buffer = cm.ip4_to_zeromq(ip, 4040) catch unreachable;
+            warn("ip: {s}\n", .{ip_buffer.span()});
         }
         if (tag == 1) {
             var chat = deserializer.deserialize(Chat) catch unreachable;

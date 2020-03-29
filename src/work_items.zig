@@ -56,6 +56,11 @@ fn add_connection_callback(conn_data: *AddConnectionData) void {
     cm.outgoing_connections.append(outgoing_connection) catch unreachable;
     var connection_thread = std.Thread.spawn(cm.outgoing_connections.ptrAt(0), functions.connection_processor) catch unreachable;
     cm.connection_threads.append(connection_thread) catch unreachable;
+
+    var buffer = p2p.serialize_tagged(0, @as(i64, 0)) catch unreachable;
+
+    var msg = Message.init_slice(buffer.span()) catch unreachable;
+    outgoing_connection.queue_message(msg) catch unreachable;
 }
 
 pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
