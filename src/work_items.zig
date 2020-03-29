@@ -15,7 +15,7 @@ const cm = p2p.connection_management;
 var PRNG = std.rand.DefaultPrng.init(0);
 
 pub fn send_process(chat: *Chat) void {
-    var buffer = p2p.serialize(chat) catch unreachable;
+    var buffer = p2p.serialize_tagged(10, chat) catch unreachable;
     defer buffer.deinit();
 
     var i: usize = 0;
