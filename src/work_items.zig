@@ -11,7 +11,6 @@ const make_work_item = p2p.work.make_work_item;
 const functions = p2p.process_functions;
 const cm = p2p.connection_management;
 
-
 var PRNG = std.rand.DefaultPrng.init(0);
 
 pub fn send_callback(chat: *Chat) void {
@@ -27,14 +26,11 @@ pub fn send_callback(chat: *Chat) void {
 
 pub const SendChatWorkItem = make_work_item(Chat, send_callback);
 
-
-
 pub fn present_callback(chat: *Chat) void {
     std.debug.warn("{}: {}\n", .{ chat.user, chat.message });
 }
 
 pub const PresentWorkItem = make_work_item(Chat, present_callback);
-
 
 pub fn relay_callback(chat: *Chat) void {
     var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
@@ -48,23 +44,23 @@ pub fn relay_callback(chat: *Chat) void {
 
 pub const RelayWorkItem = make_work_item(Chat, relay_callback);
 
-
 const AddConnectionData = std.Buffer;
 
 fn add_connection_callback(conn_data: *AddConnectionData) void {
     var outgoing_connection = cm.OutgoingConnection.init(conn_data.span()) catch unreachable;
+
+    //Say hello
+    var buffer = p2p.serialize_tagged(0, @as(i64, 0)) catch unreachable;
+    var msg = Message.init_slice(buffer.span()) catch unreachable;
+    outgoing_connection.queue_message(msg) catch unreachable;
+
+    //add connection and start thread
     cm.outgoing_connections.append(outgoing_connection) catch unreachable;
     var connection_thread = std.Thread.spawn(cm.outgoing_connections.ptrAt(0), functions.connection_processor) catch unreachable;
     cm.connection_threads.append(connection_thread) catch unreachable;
-
-    var buffer = p2p.serialize_tagged(0, @as(i64, 0)) catch unreachable;
-
-    var msg = Message.init_slice(buffer.span()) catch unreachable;
-    outgoing_connection.queue_message(msg) catch unreachable;
 }
 
 pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
-
 
 pub fn check_connection_callback(data: *work.DummyWorkData) void {
     var i: usize = 0;
