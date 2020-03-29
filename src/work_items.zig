@@ -48,7 +48,6 @@ pub fn relay_process(chat: *Chat) void {
 
 pub const RelayWorkItem = make_work_item(Chat, relay_process);
 
-
 pub fn check_connection_process(data: *work.DummyWorkData) void {
     var i: usize = 0;
     while (i < cm.outgoing_connections.len) {
