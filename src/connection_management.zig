@@ -13,14 +13,17 @@ const WorkItem = p2p.work.WorkItem;
 pub var context: ?*c_void = undefined; //zmq context
 pub var outgoing_connections: std.ArrayList(OutgoingConnection) = undefined;
 pub var known_addresses: std.ArrayList([:0]u8) = undefined;
+pub var connection_threads: std.ArrayList(*std.Thread) = undefined;
 
 
 const c = p2p.c;
 
 
 pub fn init() void {
-    outgoing_connections = std.ArrayList(OutgoingConnection).init(direct_allocator);
     context = c.zmq_ctx_new();
+
+    outgoing_connections = std.ArrayList(OutgoingConnection).init(direct_allocator);
+    connection_threads = std.ArrayList(*std.Thread).init(direct_allocator);
     known_addresses = std.ArrayList([:0]u8).init(direct_allocator);
 }
 

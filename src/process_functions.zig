@@ -86,19 +86,24 @@ pub fn receiver(socket: *Socket) void {
         defer deserializer.deinit();
 
         var tag = deserializer.tag() catch unreachable;
-        var chat = deserializer.deserialize(Chat) catch unreachable;
-        const hash = p2p.blake_hash(chat.message);
-        var optional_kv = sent_map.put(hash, true) catch unreachable;
-        if (optional_kv) |kv| {
-            continue;
+        if (tag == 0) {
+
         }
+        if (tag == 1) {
+            var chat = deserializer.deserialize(Chat) catch unreachable;
+            const hash = p2p.blake_hash(chat.message);
+            var optional_kv = sent_map.put(hash, true) catch unreachable;
+            if (optional_kv) |kv| {
+                continue;
+            }
 
-        var present_work_item = wi.PresentWorkItem.init(direct_allocator, chat) catch unreachable;
-        work.work_queue.push(&present_work_item.work_item) catch unreachable;
+            var present_work_item = wi.PresentWorkItem.init(direct_allocator, chat) catch unreachable;
+            work.work_queue.push(&present_work_item.work_item) catch unreachable;
 
-        var chat_copy = chat.copy() catch unreachable;
-        var relay_work_item = wi.RelayWorkItem.init(direct_allocator, chat_copy) catch unreachable;
-        work.work_queue.push(&relay_work_item.work_item) catch unreachable;
+            var chat_copy = chat.copy() catch unreachable;
+            var relay_work_item = wi.RelayWorkItem.init(direct_allocator, chat_copy) catch unreachable;
+            work.work_queue.push(&relay_work_item.work_item) catch unreachable;
+        }
     }
 }
 
@@ -116,7 +121,7 @@ pub fn line_reader(username: [:0]const u8) void {
         var chat = Chat.init(username, line[0..:0]) catch unreachable;
 
         // add work item to queue
-        var send_work_item = wi.SendWorkItem.init(direct_allocator, chat) catch unreachable;
+        var send_work_item = wi.SendChatWorkItem.init(direct_allocator, chat) catch unreachable;
         work.work_queue.push(&send_work_item.work_item) catch unreachable;
     }
 }

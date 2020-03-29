@@ -76,6 +76,10 @@ pub fn make_work_item(comptime WorkType: type, work_function: fn (data: *WorkTyp
     };
 }
 
+pub fn queue_work_item(value: var) !void {
+    try work_queue.push(&value.work_item);
+}
+
 //Main worker function, grabbing work items and processing them
 pub fn worker(context: void) void {
     while (true) {

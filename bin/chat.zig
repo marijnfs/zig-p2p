@@ -3,7 +3,8 @@ const p2p = @import("p2p");
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const work = p2p.work;
-const WorkItem = work.WorkItem;
+const wi = p2p.work_items;
+
 const Chat = p2p.Chat;
 const cm = p2p.connection_management;
 
@@ -31,27 +32,27 @@ pub fn main() anyerror!void {
     try init();
 
     var argv = std.os.argv;
-    if (argv.len < 4) {
-        std.debug.panic("Not enough arguments: usage {} [bind_point] [connect_point] [username], e.g. bind_point = ipc:///tmp/dummy\n", .{argv[0]});
+    if (argv.len < 3) {
+        std.debug.panic("Not enough arguments: usage {} [username] [bind_point] [connection points] x N, e.g. bind_point = ipc:///tmp/dummy\n", .{argv[0]});
     }
-    const bind_point = mem.toSliceConst(u8, argv[1]);
-    const connect_point = mem.toSliceConst(u8, argv[2]);
-    username = mem.spanZ(argv[3]);
+    username = mem.spanZ(argv[1]);
+
+    const bind_point = mem.toSliceConst(u8, argv[2]);
+    for (argv[3..]) |connect_point_arg| {
+        const connect_point = mem.toSliceConst(u8, connect_point_arg);
+        var work_item = try wi.AddConnectionWorkItem.init(direct_allocator, std.Buffer.init(direct_allocator, connect_point) catch unreachable);
+        try work.queue_work_item(work_item);
+    }
 
     warn("Username: {}\n", .{username});
 
     bind_socket = Socket.init(cm.context, c.ZMQ_REP);
     try bind_socket.bind(bind_point);
 
-    var outgoing_connection = try cm.OutgoingConnection.init(connect_point);
-    try cm.outgoing_connections.append(outgoing_connection);
-
     var receiver_thread = try std.Thread.spawn(&bind_socket, functions.receiver);
     var line_reader_thread = try std.Thread.spawn(username, functions.line_reader);
     var manager_period: u64 = 4;
     var connection_manager_reminder_thread = try std.Thread.spawn(manager_period, functions.connection_manager_reminder);
-
-    var connection_thread = try std.Thread.spawn(cm.outgoing_connections.ptrAt(0), functions.connection_processor);
 
     // Main worker thread
     var worker_thread = try std.Thread.spawn({}, work.worker);
@@ -61,5 +62,5 @@ pub fn main() anyerror!void {
     worker_thread.wait();
     connection_manager_reminder_thread.wait();
 
-    warn("Binding to: {}, connecting to: {}", .{ bind_point, connect_point });
+    warn("Binding to: {}", .{ bind_point });
 }

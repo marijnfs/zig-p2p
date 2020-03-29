@@ -8,14 +8,14 @@ const Message = p2p.Message;
 const Chat = p2p.Chat;
 const direct_allocator = std.heap.direct_allocator;
 const make_work_item = p2p.work.make_work_item;
-
+const functions = p2p.process_functions;
 const cm = p2p.connection_management;
 
 
 var PRNG = std.rand.DefaultPrng.init(0);
 
-pub fn send_process(chat: *Chat) void {
-    var buffer = p2p.serialize_tagged(10, chat) catch unreachable;
+pub fn send_callback(chat: *Chat) void {
+    var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
     defer buffer.deinit();
 
     var i: usize = 0;
@@ -25,19 +25,19 @@ pub fn send_process(chat: *Chat) void {
     }
 }
 
-pub const SendWorkItem = make_work_item(Chat, send_process);
+pub const SendChatWorkItem = make_work_item(Chat, send_callback);
 
 
 
-pub fn present_process(chat: *Chat) void {
+pub fn present_callback(chat: *Chat) void {
     std.debug.warn("{}: {}\n", .{ chat.user, chat.message });
 }
 
-pub const PresentWorkItem = make_work_item(Chat, present_process);
+pub const PresentWorkItem = make_work_item(Chat, present_callback);
 
 
-pub fn relay_process(chat: *Chat) void {
-    var buffer = p2p.serialize_tagged(10, chat) catch unreachable;
+pub fn relay_callback(chat: *Chat) void {
+    var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
     defer buffer.deinit();
 
     for (cm.outgoing_connections.span()) |*conn| {
@@ -46,9 +46,22 @@ pub fn relay_process(chat: *Chat) void {
     }
 }
 
-pub const RelayWorkItem = make_work_item(Chat, relay_process);
+pub const RelayWorkItem = make_work_item(Chat, relay_callback);
 
-pub fn check_connection_process(data: *work.DummyWorkData) void {
+
+const AddConnectionData = std.Buffer;
+
+fn add_connection_callback(conn_data: *AddConnectionData) void {
+    var outgoing_connection = cm.OutgoingConnection.init(conn_data.span()) catch unreachable;
+    cm.outgoing_connections.append(outgoing_connection) catch unreachable;
+    var connection_thread = std.Thread.spawn(cm.outgoing_connections.ptrAt(0), functions.connection_processor) catch unreachable;
+    cm.connection_threads.append(connection_thread) catch unreachable;
+}
+
+pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
+
+
+pub fn check_connection_callback(data: *work.DummyWorkData) void {
     var i: usize = 0;
     while (i < cm.outgoing_connections.len) {
         var current = cm.outgoing_connections.ptrAt(i);
@@ -85,4 +98,4 @@ pub fn check_connection_process(data: *work.DummyWorkData) void {
     // outgoing_connections
 }
 
-pub const CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_process);
+pub const CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback);
