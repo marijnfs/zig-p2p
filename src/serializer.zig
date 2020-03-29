@@ -21,7 +21,7 @@ pub fn deserialize(comptime Type: type, buffer: []u8, allocator: *std.mem.Alloca
     return obj;
 }
 
-pub fn serialize_tagged(tag: u64, value: var) !std.Buffer {
+pub fn serialize_tagged(tag: i64, value: var) !std.Buffer {
     var buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0);
     var stream = buffer.outStream();
     var serializer = serializer_allocate(.Little, .Byte, stream);
@@ -42,6 +42,7 @@ const DeserializerTagged = struct {
     deserializer: DeserializerAllocateType,
 
     pub fn init(buffer: []u8, allocator: *std.mem.Allocator) Self {
+        std.debug.warn("Start from buffer len: {}\n", .{buffer.len});
         var in_stream = std.io.fixedBufferStream(buffer).inStream();
         return .{
             .in_stream = in_stream,
