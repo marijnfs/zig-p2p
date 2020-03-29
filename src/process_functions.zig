@@ -69,18 +69,7 @@ pub fn receiver(socket: *Socket) void {
         var rc_recv = socket.recv(&msg);
         
         var ip = msg.get_peer_ip4();
-
-        warn("ip: {x}\n", .{ip});
-        //const fd = c.zmq_msg_get(@ptrCast([*c]c.struct_zmq_msg_t, &msg.msg), c.ZMQ_SRCFD);
-        const fd = c.zmq_msg_get(&msg.msg, c.ZMQ_SRCFD);
-
-        if (fd != -1) {
-            var addr: c.sockaddr = undefined;
-            var len: c_uint = 0;
-            warn("peername: {x}\n", .{addr.sa_data});
-            var result = c.getpeername (fd, &addr, &len);
-            warn("peername: {x}\n", .{addr.sa_data});
-        }
+        warn("ip: {x} {s}\n", .{ip, cm.ip4_to_zeromq(ip, 4040)});
 
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
@@ -92,9 +81,14 @@ pub fn receiver(socket: *Socket) void {
         var rc_send = socket.send(&return_msg);
 
         //setup work item and add to queue
-        var chat = p2p.deserialize(Chat, buffer.span(), direct_allocator) catch unreachable;
 
-        //var chat = Chat.init("incoming", buffer.span(), direct_allocator) catch unreachable;
+        // const f = comptime struct { fn bla(i: i64, s: ) void {
+        //     warn("i: {}\n", .{i});
+        //     try s.deserialize(Chat);
+        //    }
+        // };
+
+        var chat = p2p.deserialize_tagged(Chat, buffer.span(), direct_allocator) catch unreachable;
 
         const hash = p2p.blake_hash(chat.message);
         var optional_kv = sent_map.put(hash, true) catch unreachable;

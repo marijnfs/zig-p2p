@@ -1,4 +1,6 @@
 const std = @import("std");
+const fmt = std.fmt;
+
 const Allocator = std.mem.Allocator;
 
 const p2p = @import("p2p.zig");
@@ -50,6 +52,12 @@ pub const OutgoingConnection = struct {
     socket: Socket,
     active: bool
 };
+
+pub fn ip4_to_zeromq(ip: [4]u8, port: i64) ![100]u8 {
+    var buf: [100]u8 = undefined;
+    _ = try fmt.bufPrint(buf[0..], "tcp://{}.{}.{}.{}:{}\n", .{ip[0], ip[1], ip[2], ip[3], port});
+    return buf;
+}
 
 // pub fn get_addr(fd: c_int) void {
 //     var ift: c.ifreq = undefined;
