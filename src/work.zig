@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 const Allocator = mem.Allocator;
-const direct_allocator = std.heap.direct_allocator;
+const default_allocator = std.heap.page_allocator;
 
 const p2p = @import("p2p.zig");
 const WorkQueue = @import("queue.zig").AtomicQueue(WorkItem);
@@ -32,7 +32,7 @@ pub const WorkItem = struct {
 pub var work_queue: p2p.AtomicQueue(*WorkItem) = undefined;
 
 pub fn init() void {
-    work_queue = p2p.AtomicQueue(*WorkItem).init(direct_allocator);
+    work_queue = p2p.AtomicQueue(*WorkItem).init(default_allocator);
 }
 
 pub const DummyWorkData = struct {
@@ -48,11 +48,11 @@ pub fn make_work_item(comptime WorkType: type, work_function: fn (data: *WorkTyp
         pub fn init(allocator: *Allocator, work_data: WorkType) !*Self {
             var work_type = try allocator.create(Self);
             work_type.work_data = work_data;
-            work_type.work_item = .{.process_fn = process,
-                                    .deinit_fn = deinit,
-                                    .free_fn = free,
-                                };
-
+            work_type.work_item = .{
+                .process_fn = process,
+                .deinit_fn = deinit,
+                .free_fn = free,
+            };
 
             return work_type;
         }
@@ -71,7 +71,6 @@ pub fn make_work_item(comptime WorkType: type, work_function: fn (data: *WorkTyp
         pub fn process(work_item: *WorkItem) void {
             const self = @fieldParentPtr(Self, "work_item", work_item);
             work_function(&self.work_data);
-
         }
     };
 }
@@ -94,4 +93,3 @@ pub fn worker(context: void) void {
         work_item.process();
     }
 }
-

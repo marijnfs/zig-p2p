@@ -1,7 +1,7 @@
 const std = @import("std");
 const fmt = std.fmt;
 const Builder = std.build.Builder;
-var allocator = std.heap.direct_allocator;
+var allocator = std.heap.page_allocator;
 
 fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
     const mode = b.standardReleaseOptions();

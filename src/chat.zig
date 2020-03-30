@@ -1,7 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 
-const default_allocator = std.heap.direct_allocator;
+const default_allocator = std.heap.page_allocator;
 
 pub const Chat = struct {
     user: []u8,
@@ -35,6 +35,5 @@ pub const Chat = struct {
             .message = message_buf,
             .timestamp = self.timestamp,
         };
-
     }
 };

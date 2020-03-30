@@ -2,17 +2,16 @@ const std = @import("std");
 const serializer_allocate = @import("serialization_allocate.zig").serializer_allocate;
 const deserializer_allocate = @import("serialization_allocate.zig").deserializer_allocate;
 const DeserializerAllocate = @import("serialization_allocate.zig").DeserializerAllocate;
-
+const default_allocator = std.heap.page_allocator;
 
 pub fn serialize(value: var) !std.Buffer {
-    var buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0);
+    var buffer = try std.Buffer.initSize(default_allocator, 0);
     var stream = buffer.outStream();
     var serializer = serializer_allocate(.Little, .Byte, stream);
     try serializer.serialize(value);
     try serializer.flush();
     return buffer;
 }
-
 
 pub fn deserialize(comptime Type: type, buffer: []u8, allocator: *std.mem.Allocator) !Type {
     var in_stream = std.io.fixedBufferStream(buffer).inStream();
@@ -22,7 +21,7 @@ pub fn deserialize(comptime Type: type, buffer: []u8, allocator: *std.mem.Alloca
 }
 
 pub fn serialize_tagged(tag: i64, value: var) !std.Buffer {
-    var buffer = try std.Buffer.initSize(std.heap.direct_allocator, 0);
+    var buffer = try std.Buffer.initSize(default_allocator, 0);
     var stream = buffer.outStream();
     var serializer = serializer_allocate(.Little, .Byte, stream);
     try serializer.serializeInt(tag);
@@ -30,7 +29,6 @@ pub fn serialize_tagged(tag: i64, value: var) !std.Buffer {
     try serializer.flush();
     return buffer;
 }
-
 
 const FixedBufferStream = std.io.FixedBufferStream([]u8).InStream;
 const DeserializerAllocateType = DeserializerAllocate(.Little, .Byte, FixedBufferStream);
@@ -43,7 +41,7 @@ const DeserializerTagged = struct {
 
     pub fn init(buffer: []u8, allocator: *std.mem.Allocator) Self {
         std.debug.warn("Start from buffer len: {}\n", .{buffer.len});
-        var deserializer_tagged = DeserializerTagged {
+        var deserializer_tagged = DeserializerTagged{
             .buffer = std.io.fixedBufferStream(buffer),
             .allocator = allocator,
         };
@@ -51,8 +49,7 @@ const DeserializerTagged = struct {
         return deserializer_tagged;
     }
 
-    pub fn deinit(self: *Self) void {
-    }
+    pub fn deinit(self: *Self) void {}
 
     pub fn tag(self: *Self) !i64 {
         var deserializer = deserializer_allocate(.Little, .Byte, self.buffer.inStream(), self.allocator);

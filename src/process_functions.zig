@@ -7,17 +7,15 @@ const cm = p2p.connection_management;
 const wi = p2p.work_items;
 
 const work = p2p.work;
-const direct_allocator = std.heap.direct_allocator;
+const default_allocator = std.heap.page_allocator;
 const c = p2p.c;
 
-
 const warn = std.debug.warn;
-
 
 var sent_map: std.AutoHashMap([32]u8, bool) = undefined;
 
 pub fn init() void {
-    sent_map = std.AutoHashMap([32]u8, bool).init(direct_allocator);
+    sent_map = std.AutoHashMap([32]u8, bool).init(default_allocator);
 }
 
 // Function to process message queue in an OutgoingConnection
@@ -55,7 +53,7 @@ pub fn discovery_reminder(discovery_period_sec: i64) void {
 pub fn connection_manager_reminder(check_period_sec: u64) void {
     while (true) {
         std.time.sleep(400000000);
-        var check_connection_item = wi.CheckConnectionWorkItem.init(direct_allocator, .{}) catch unreachable;
+        var check_connection_item = wi.CheckConnectionWorkItem.init(default_allocator, .{}) catch unreachable;
         work.work_queue.push(&check_connection_item.work_item) catch unreachable;
     }
 }
@@ -78,7 +76,7 @@ pub fn receiver(socket: *Socket) void {
         var rc_send = socket.send(&return_msg);
 
         // get chat
-        var deserializer = p2p.deserialize_tagged(buffer.span(), direct_allocator);
+        var deserializer = p2p.deserialize_tagged(buffer.span(), default_allocator);
         defer deserializer.deinit();
 
         var tag = deserializer.tag() catch unreachable;
@@ -87,7 +85,7 @@ pub fn receiver(socket: *Socket) void {
             var ip = msg.get_peer_ip4();
             var ip_buffer = cm.ip4_to_zeromq(ip, 4040) catch unreachable;
 
-            var work_item = wi.AddKnownAddressWorkItem.init(direct_allocator, ip_buffer) catch unreachable;
+            var work_item = wi.AddKnownAddressWorkItem.init(default_allocator, ip_buffer) catch unreachable;
             work.queue_work_item(work_item) catch unreachable;
             warn("ip: {s}\n", .{ip_buffer.span()});
         }
@@ -100,16 +98,15 @@ pub fn receiver(socket: *Socket) void {
                 continue;
             }
 
-            var present_work_item = wi.PresentWorkItem.init(direct_allocator, chat) catch unreachable;
+            var present_work_item = wi.PresentWorkItem.init(default_allocator, chat) catch unreachable;
             work.work_queue.push(&present_work_item.work_item) catch unreachable;
 
             var chat_copy = chat.copy() catch unreachable;
-            var relay_work_item = wi.RelayWorkItem.init(direct_allocator, chat_copy) catch unreachable;
+            var relay_work_item = wi.RelayWorkItem.init(default_allocator, chat_copy) catch unreachable;
             work.work_queue.push(&relay_work_item.work_item) catch unreachable;
         }
     }
 }
-
 
 // Line reader to read lines from standard in
 pub fn line_reader(username: [:0]const u8) void {
@@ -117,14 +114,14 @@ pub fn line_reader(username: [:0]const u8) void {
 
     while (true) {
         // read a line
-        var line = stdin.readUntilDelimiterAlloc(direct_allocator, '\n', 10000) catch break;
+        var line = stdin.readUntilDelimiterAlloc(default_allocator, '\n', 10000) catch break;
         if (line.len == 0)
             continue;
         // set up chat
         var chat = Chat.init(username, line[0..:0], std.time.timestamp()) catch unreachable;
 
         // add work item to queue
-        var send_work_item = wi.SendChatWorkItem.init(direct_allocator, chat) catch unreachable;
+        var send_work_item = wi.SendChatWorkItem.init(default_allocator, chat) catch unreachable;
         work.work_queue.push(&send_work_item.work_item) catch unreachable;
     }
 }

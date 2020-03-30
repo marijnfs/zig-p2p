@@ -6,7 +6,7 @@ const Allocator = std.mem.Allocator;
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
-const direct_allocator = std.heap.direct_allocator;
+const default_allocator = std.heap.page_allocator;
 const make_work_item = p2p.work.make_work_item;
 const functions = p2p.process_functions;
 const cm = p2p.connection_management;
@@ -62,7 +62,6 @@ fn add_connection_callback(conn_data: *AddConnectionData) void {
 }
 pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
 
-
 const AddKnownAddressData = std.Buffer;
 fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
     for (cm.known_addresses.span()) |addr| {
@@ -73,7 +72,6 @@ fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
     cm.known_addresses.append(std.Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
 }
 pub const AddKnownAddressWorkItem = make_work_item(AddKnownAddressData, add_known_address_callback);
-
 
 pub fn check_connection_callback(data: *work.DummyWorkData) void {
     var i: usize = 0;
@@ -95,7 +93,7 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
         var n: usize = 0;
         while (n < 1 and cm.outgoing_connections.len < K) : (n += 1) {
             var selection = PRNG.random.uintLessThan(usize, cm.known_addresses.len);
-            std.debug.warn("selection: {}/{}\n", .{selection, cm.known_addresses.len});
+            std.debug.warn("selection: {}/{}\n", .{ selection, cm.known_addresses.len });
             var selected_address = cm.known_addresses.ptrAt(selection);
 
             var found: bool = false;
@@ -108,7 +106,7 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
             if (found) continue;
             std.debug.warn("add item for: {s}\n", .{selected_address.span()});
 
-            var work_item = AddConnectionWorkItem.init(direct_allocator, std.Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
+            var work_item = AddConnectionWorkItem.init(default_allocator, std.Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
             work.queue_work_item(work_item) catch unreachable;
         }
     }

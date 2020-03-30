@@ -14,10 +14,9 @@ const Buffer = std.Buffer;
 const functions = p2p.process_functions;
 
 const warn = std.debug.warn;
-const direct_allocator = std.heap.direct_allocator;
+const default_allocator = std.heap.page_allocator;
 
 const c = p2p.c;
-
 
 var bind_socket: Socket = undefined;
 
@@ -25,7 +24,7 @@ pub fn init() !void {
     p2p.init();
 }
 
-var username: [:0] const u8 = undefined;
+var username: [:0]const u8 = undefined;
 
 pub fn main() anyerror!void {
     warn("Chat\n", .{});
@@ -40,7 +39,7 @@ pub fn main() anyerror!void {
     const bind_point = mem.spanZ(argv[2]);
     for (argv[3..]) |connect_point_arg| {
         const connect_point = mem.spanZ(connect_point_arg);
-        var work_item = try wi.AddConnectionWorkItem.init(direct_allocator, std.Buffer.init(direct_allocator, connect_point) catch unreachable);
+        var work_item = try wi.AddConnectionWorkItem.init(default_allocator, std.Buffer.init(default_allocator, connect_point) catch unreachable);
         try work.queue_work_item(work_item);
     }
 
@@ -62,5 +61,5 @@ pub fn main() anyerror!void {
     worker_thread.wait();
     connection_manager_reminder_thread.wait();
 
-    warn("Binding to: {}", .{ bind_point });
+    warn("Binding to: {}", .{bind_point});
 }

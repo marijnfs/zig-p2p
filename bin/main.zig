@@ -5,6 +5,7 @@ const Message = p2p.Message;
 
 const warn = std.debug.warn;
 const c = p2p.c;
+const default_allocator = std.heap.page_allocator;
 
 const Bla = struct {
     a: i64,
@@ -30,7 +31,7 @@ pub fn main() anyerror!void {
             warn("recv rc: {}\n", .{rc});
 
             var buffer = try message.get_buffer();
-            var item = try p2p.deserialize(Bla, buffer.span(), std.heap.direct_allocator);
+            var item = try p2p.deserialize(Bla, buffer.span(), default_allocator);
             warn("{}\n", .{item});
         }
 
