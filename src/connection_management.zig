@@ -7,12 +7,13 @@ const p2p = @import("p2p.zig");
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
-const default_allocator = std.heap.page_allocator;
 const WorkItem = p2p.work.WorkItem;
+const Buffer = std.ArrayListSentineled(u8, 0);
+const default_allocator = std.heap.page_allocator;
 
 pub var context: ?*c_void = undefined; //zmq context
 pub var outgoing_connections: std.ArrayList(OutgoingConnection) = undefined;
-pub var known_addresses: std.ArrayList(std.Buffer) = undefined;
+pub var known_addresses: std.ArrayList(Buffer) = undefined;
 pub var connection_threads: std.ArrayList(*std.Thread) = undefined;
 
 const c = p2p.c;
@@ -22,7 +23,7 @@ pub fn init() void {
 
     outgoing_connections = std.ArrayList(OutgoingConnection).init(default_allocator);
     connection_threads = std.ArrayList(*std.Thread).init(default_allocator);
-    known_addresses = std.ArrayList(std.Buffer).init(default_allocator);
+    known_addresses = std.ArrayList(Buffer).init(default_allocator);
 }
 
 pub const OutgoingConnection = struct {
@@ -35,7 +36,7 @@ pub const OutgoingConnection = struct {
         return OutgoingConnection{
             .send_queue = p2p.AtomicQueue(Message).init(default_allocator),
             .socket = connect_socket,
-            .connect_point = try std.Buffer.init(default_allocator, connect_point),
+            .connect_point = try Buffer.init(default_allocator, connect_point),
             .active = true,
         };
     }
@@ -48,17 +49,17 @@ pub const OutgoingConnection = struct {
         try self.send_queue.push(message);
     }
 
-    connect_point: std.Buffer,
+    connect_point: Buffer,
     send_queue: p2p.AtomicQueue(Message),
     socket: Socket,
     active: bool
 };
 
-pub fn ip4_to_zeromq(ip: [4]u8, port: i64) !std.Buffer {
+pub fn ip4_to_zeromq(ip: [4]u8, port: i64) !Buffer {
     var buf: [100]u8 = undefined;
 
     const buf_printed = try fmt.allocPrint(default_allocator, "tcp://{}.{}.{}.{}:{}", .{ ip[0], ip[1], ip[2], ip[3], port });
     defer default_allocator.free(buf_printed);
-    var buffer = try std.Buffer.init(default_allocator, buf_printed);
+    var buffer = try Buffer.init(default_allocator, buf_printed);
     return buffer;
 }

@@ -4,6 +4,7 @@ const cm = p2p.connection_management;
 const testing = std.testing;
 const mem = std.mem;
 const Allocator = mem.Allocator;
+const Buffer = std.ArrayListSentineled(u8, 0);
 
 const default_allocator = std.heap.page_allocator;
 const warn = std.debug.warn;
@@ -58,14 +59,14 @@ pub const Message = struct {
     }
 
     // returns copy of data in a buffer, buffer must be deinit()
-    pub fn get_buffer(self: *Message) !std.Buffer {
+    pub fn get_buffer(self: *Message) !Buffer {
         var ptr = c.zmq_msg_data(&self.msg);
         var zig_ptr = @ptrCast([*]const u8, ptr);
         var len = c.zmq_msg_size(&self.msg);
 
         var alloc_data = try default_allocator.alloc(u8, len);
         @memcpy(alloc_data.ptr, zig_ptr, len);
-        var buffer = try std.Buffer.fromOwnedSlice(default_allocator, alloc_data);
+        var buffer = try Buffer.fromOwnedSlice(default_allocator, alloc_data);
         return buffer;
     }
 };

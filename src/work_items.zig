@@ -10,6 +10,7 @@ const default_allocator = std.heap.page_allocator;
 const make_work_item = p2p.work.make_work_item;
 const functions = p2p.process_functions;
 const cm = p2p.connection_management;
+const Buffer = std.ArrayListSentineled(u8, 0);
 
 var PRNG = std.rand.DefaultPrng.init(0);
 
@@ -44,7 +45,7 @@ pub fn relay_callback(chat: *Chat) void {
 
 pub const RelayWorkItem = make_work_item(Chat, relay_callback);
 
-const AddConnectionData = std.Buffer;
+const AddConnectionData = Buffer;
 
 fn add_connection_callback(conn_data: *AddConnectionData) void {
     std.debug.warn("conn data: {}\n", .{conn_data.span()});
@@ -62,14 +63,14 @@ fn add_connection_callback(conn_data: *AddConnectionData) void {
 }
 pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
 
-const AddKnownAddressData = std.Buffer;
+const AddKnownAddressData = Buffer;
 fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
     for (cm.known_addresses.span()) |addr| {
         if (std.mem.eql(u8, addr.span(), conn_data.span()))
             return;
     }
     std.debug.warn("Adding: {s}\n", .{conn_data.span()});
-    cm.known_addresses.append(std.Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
+    cm.known_addresses.append(Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
 }
 pub const AddKnownAddressWorkItem = make_work_item(AddKnownAddressData, add_known_address_callback);
 
@@ -106,7 +107,7 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
             if (found) continue;
             std.debug.warn("add item for: {s}\n", .{selected_address.span()});
 
-            var work_item = AddConnectionWorkItem.init(default_allocator, std.Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
+            var work_item = AddConnectionWorkItem.init(default_allocator, Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
             work.queue_work_item(work_item) catch unreachable;
         }
     }

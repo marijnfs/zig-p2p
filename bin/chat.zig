@@ -10,7 +10,8 @@ const cm = p2p.connection_management;
 
 const mem = std.mem;
 const Allocator = mem.Allocator;
-const Buffer = std.Buffer;
+const Buffer = std.ArrayListSentineled(u8, 0);
+
 const functions = p2p.process_functions;
 
 const warn = std.debug.warn;
@@ -39,7 +40,7 @@ pub fn main() anyerror!void {
     const bind_point = mem.spanZ(argv[2]);
     for (argv[3..]) |connect_point_arg| {
         const connect_point = mem.spanZ(connect_point_arg);
-        var work_item = try wi.AddConnectionWorkItem.init(default_allocator, std.Buffer.init(default_allocator, connect_point) catch unreachable);
+        var work_item = try wi.AddConnectionWorkItem.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
         try work.queue_work_item(work_item);
     }
 

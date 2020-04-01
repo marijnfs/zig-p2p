@@ -3,9 +3,10 @@ const serializer_allocate = @import("serialization_allocate.zig").serializer_all
 const deserializer_allocate = @import("serialization_allocate.zig").deserializer_allocate;
 const DeserializerAllocate = @import("serialization_allocate.zig").DeserializerAllocate;
 const default_allocator = std.heap.page_allocator;
+const Buffer = std.ArrayListSentineled(u8, 0);
 
-pub fn serialize(value: var) !std.Buffer {
-    var buffer = try std.Buffer.initSize(default_allocator, 0);
+pub fn serialize(value: var) !Buffer {
+    var buffer = try Buffer.initSize(default_allocator, 0);
     var stream = buffer.outStream();
     var serializer = serializer_allocate(.Little, .Byte, stream);
     try serializer.serialize(value);
@@ -20,8 +21,8 @@ pub fn deserialize(comptime Type: type, buffer: []u8, allocator: *std.mem.Alloca
     return obj;
 }
 
-pub fn serialize_tagged(tag: i64, value: var) !std.Buffer {
-    var buffer = try std.Buffer.initSize(default_allocator, 0);
+pub fn serialize_tagged(tag: i64, value: var) !Buffer {
+    var buffer = try Buffer.initSize(default_allocator, 0);
     var stream = buffer.outStream();
     var serializer = serializer_allocate(.Little, .Byte, stream);
     try serializer.serializeInt(tag);
