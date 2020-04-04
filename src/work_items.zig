@@ -19,7 +19,7 @@ pub fn send_callback(chat: *Chat) void {
     defer buffer.deinit();
 
     var i: usize = 0;
-    while (i < cm.outgoing_connections.len) : (i += 1) {
+    while (i < cm.outgoing_connections.items.len) : (i += 1) {
         var msg = Message.init_slice(buffer.span()) catch unreachable;
         cm.outgoing_connections.ptrAt(i).queue_message(msg) catch unreachable;
     }
@@ -76,7 +76,7 @@ pub const AddKnownAddressWorkItem = make_work_item(AddKnownAddressData, add_know
 
 pub fn check_connection_callback(data: *work.DummyWorkData) void {
     var i: usize = 0;
-    while (i < cm.outgoing_connections.len) {
+    while (i < cm.outgoing_connections.items.len) {
         var current = cm.outgoing_connections.ptrAt(i);
         if (!current.active) {
             std.debug.warn("Removing connection: {}\n", .{current});
@@ -90,11 +90,11 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
 
     const K: usize = 4;
 
-    if (cm.known_addresses.len > cm.outgoing_connections.len) {
+    if (cm.known_addresses.items.len > cm.outgoing_connections.items.len) {
         var n: usize = 0;
-        while (n < 1 and cm.outgoing_connections.len < K) : (n += 1) {
-            var selection = PRNG.random.uintLessThan(usize, cm.known_addresses.len);
-            std.debug.warn("selection: {}/{}\n", .{ selection, cm.known_addresses.len });
+        while (n < 1 and cm.outgoing_connections.items.len < K) : (n += 1) {
+            var selection = PRNG.random.uintLessThan(usize, cm.known_addresses.items.len);
+            std.debug.warn("selection: {}/{}\n", .{ selection, cm.known_addresses.items.len });
             var selected_address = cm.known_addresses.ptrAt(selection);
 
             var found: bool = false;

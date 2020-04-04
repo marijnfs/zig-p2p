@@ -63,19 +63,19 @@ pub fn AtomicQueue(comptime T: type) type {
         }
 
         fn _empty(self: *Self) bool {
-           return self.front == self.back;
+            return self.front == self.back;
         }
 
         fn _size(self: *Self) usize {
-           return self.back - self.front;
+            return self.back - self.front;
         }
 
         //make sure we can insert an item. Move of allocate memory if needed.
         fn insertCheck(self: *Self) !void {
             const desired_capacity = (self._size() + 1) * 2; // double capacity is desired to prevent too many mem copies
-            if (desired_capacity < self.buffer.capacity())
+            if (desired_capacity < self.buffer.capacity)
                 try self.buffer.ensureCapacity(desired_capacity);
-            if (self.buffer.capacity() < self.back + 1) {
+            if (self.buffer.capacity < self.back + 1) {
                 if (self.front > 0) { //we can make space by moving
                     const N = self.back - self.front;
                     std.mem.copy(T, self.buffer.span()[0..N], self.buffer.span()[self.front..self.back]);
@@ -83,10 +83,10 @@ pub fn AtomicQueue(comptime T: type) type {
                     self.front = 0;
                     self.back = N;
                 } else { //there is no space, double capacity
-                    if (self.buffer.capacity() == 0) {
+                    if (self.buffer.capacity == 0) {
                         try self.buffer.ensureCapacity(1);
                     } else {
-                        try self.buffer.ensureCapacity(self.buffer.capacity() * 2);
+                        try self.buffer.ensureCapacity(self.buffer.capacity * 2);
                     }
                 }
             }

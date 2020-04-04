@@ -11,14 +11,18 @@ const direct_allocator = std.heap.direct_allocator;
 
 const c = p2p.c;
 
+var prng = std.rand.DefaultPrng.init(42);
+
 pub const Socket = struct {
     socket_type: c_int,
     socket: ?*c_void,
+    uuid: u64,
 
     pub fn init(context: ?*c_void, socket_type_: c_int) Socket {
         return Socket{
             .socket_type = socket_type_,
             .socket = c.zmq_socket(context, socket_type_),
+            .uuid = prng.random.int(u64),
         };
     }
 
