@@ -55,3 +55,7 @@ pub const Socket = struct {
         return c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, &message.msg), self.socket, 0);
     }
 };
+
+pub fn start_proxy(frontend: *Socket, backend: *Socket) void {
+    c.zmq_proxy(frontend.socket, backend.socket, 0);
+}

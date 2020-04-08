@@ -15,7 +15,7 @@ pub fn AtomicQueue(comptime T: type) type {
         mutex: std.Mutex,
 
         pub fn init(allocator: *std.mem.Allocator) Self {
-            return Self {
+            return Self{
                 .buffer = ArrayList(T).init(allocator),
                 .front = 0,
                 .back = 0,

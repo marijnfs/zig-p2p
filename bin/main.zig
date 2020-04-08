@@ -22,6 +22,16 @@ pub fn main() anyerror!void {
 
     try socket.bind(endpoint);
 
+    var router_endpoint = "ipc:///tmp/router";
+    var router = Socket.init(context, c.ZMQ_ROUTER);
+    _ = router.bind(router_endpoint);
+
+    var dealer_endpoint = "ipc:///tmp/dealer";
+    var dealer = Socket.init(context, c.ZMQ_DEALER);
+    _ = dealer.bind(dealer_endpoint);
+
+    start_proxy(router, dealer);
+
     while (true) {
         {
             var message = Message.init();
