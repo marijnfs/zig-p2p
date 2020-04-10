@@ -34,5 +34,5 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
 }
 
 pub fn build(b: *Builder) void {
-    const exe_chat = build_exe(b, "chat");
+    const exe_chat = build_exe(b, "relaychat");
 }
