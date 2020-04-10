@@ -24,9 +24,10 @@ pub const Message = struct {
     pub fn init_slice(buffer: []const u8) !Message {
         var tmp_msg: c.zmq_msg_t = undefined;
         // allocate new buffer, as zeromq will take ownership of this memory
-        var newbuf = try default_allocator.alloc(u8, buffer.len);
-        mem.copy(u8, newbuf[0..], buffer[0..]);
-        var rc = c.zmq_msg_init_data(&tmp_msg, @intToPtr(*u8, @ptrToInt(newbuf.ptr)), newbuf.len, null, null);
+        var rc = c.zmq_msg_init_size(&tmp_msg, buffer.len);
+
+        mem.copy(u8, @ptrCast([*]u8, c.zmq_msg_data(&tmp_msg))[0..buffer.len], buffer[0..]);
+    
         return Message{
             .msg = tmp_msg,
         };
@@ -34,6 +35,10 @@ pub const Message = struct {
 
     pub fn deinit(self: *Message) void {
         _ = c.zmq_msg_close(&self.msg);
+    }
+
+    pub fn more(self: *Message) bool {
+        return c.zmq_msg_more(&self.msg) == 1;
     }
 
     pub fn get_peer_ip4(self: *Message) [4]u8 {

@@ -66,6 +66,8 @@ pub fn receiver(socket: *Socket) void {
         defer msg.deinit();
         var rc_recv = socket.recv(&msg);
 
+        warn("more: {}\n", .{msg.more()});
+
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
 
@@ -114,11 +116,14 @@ pub fn line_reader(username: [:0]const u8) void {
 
     while (true) {
         // read a line
-        var line = stdin.readUntilDelimiterAlloc(default_allocator, '\n', 10000) catch break;
-        if (line.len == 0)
+        var buffer = std.ArrayList(u8).init(default_allocator);
+        defer buffer.deinit();
+        stdin.readUntilDelimiterArrayList(&buffer, '\n', 10000) catch break;
+
+        if (buffer.items.len == 0)
             continue;
         // set up chat
-        var chat = Chat.init(username, line[0..:0], std.time.timestamp()) catch unreachable;
+        var chat = Chat.init(username, std.mem.dupeZ(default_allocator, u8, buffer.span()) catch unreachable, std.time.timestamp()) catch unreachable;
 
         // add work item to queue
         var send_work_item = wi.SendChatWorkItem.init(default_allocator, chat) catch unreachable;

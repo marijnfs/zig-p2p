@@ -6,6 +6,7 @@ pub const serialize_tagged = @import("serializer.zig").serialize_tagged;
 pub const deserialize_tagged = @import("serializer.zig").deserialize_tagged;
 pub const AtomicQueue = @import("queue.zig").AtomicQueue;
 pub const work = @import("work.zig");
+pub const proxy = @import("proxy.zig").proxy;
 pub const Chat = @import("chat.zig").Chat;
 pub const connection_management = @import("connection_management.zig");
 pub const OutgoingConnection = connection_management.OutgoingConnection;

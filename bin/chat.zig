@@ -46,7 +46,7 @@ pub fn main() anyerror!void {
 
     warn("Username: {}\n", .{username});
 
-    bind_socket = Socket.init(cm.context, c.ZMQ_REP);
+    bind_socket = Socket.init(cm.context, c.ZMQ_ROUTER);
     try bind_socket.bind(bind_point);
 
     var receiver_thread = try std.Thread.spawn(&bind_socket, functions.receiver);
