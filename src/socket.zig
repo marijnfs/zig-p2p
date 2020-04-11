@@ -7,7 +7,6 @@ const testing = std.testing;
 const mem = std.mem;
 const Allocator = mem.Allocator;
 
-const direct_allocator = std.heap.direct_allocator;
 
 const c = p2p.c;
 

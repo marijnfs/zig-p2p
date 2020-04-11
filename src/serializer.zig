@@ -2,7 +2,9 @@ const std = @import("std");
 const serializer_allocate = @import("serialization_allocate.zig").serializer_allocate;
 const deserializer_allocate = @import("serialization_allocate.zig").deserializer_allocate;
 const DeserializerAllocate = @import("serialization_allocate.zig").DeserializerAllocate;
-const default_allocator = std.heap.page_allocator;
+
+const p2p = @import("p2p.zig");
+const default_allocator = p2p.default_allocator;
 const Buffer = std.ArrayListSentineled(u8, 0);
 
 pub fn serialize(value: var) !Buffer {

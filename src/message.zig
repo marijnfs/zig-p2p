@@ -6,7 +6,7 @@ const mem = std.mem;
 const Allocator = mem.Allocator;
 const Buffer = std.ArrayListSentineled(u8, 0);
 
-const default_allocator = std.heap.page_allocator;
+const default_allocator = p2p.default_allocator;
 const warn = std.debug.warn;
 const c = p2p.c;
 

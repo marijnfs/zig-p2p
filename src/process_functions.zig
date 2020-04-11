@@ -1,22 +1,31 @@
 const std = @import("std");
 const p2p = @import("p2p.zig");
+
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
 const cm = p2p.connection_management;
 const wi = p2p.work_items;
+const Pool = p2p.pool.Pool;
 
 const work = p2p.work;
-const default_allocator = std.heap.page_allocator;
+
+const default_allocator = p2p.default_allocator;
+
 const c = p2p.c;
 
 const warn = std.debug.warn;
 
-var sent_map: std.AutoHashMap([32]u8, bool) = undefined;
+var pool: Pool = undefined;
 
 pub fn init() void {
-    sent_map = std.AutoHashMap([32]u8, bool).init(default_allocator);
+    var root_pool_name = [_]u8{0} ** 32;
+    var name = "ROOT";
+    std.mem.copy(u8, root_pool_name[0..name.len], name);
+
+    pool = Pool.init(default_allocator, root_pool_name);
 }
+
 
 // Function to process message queue in an OutgoingConnection
 pub fn connection_processor(outgoing_connection: *cm.OutgoingConnection) void {
@@ -67,7 +76,6 @@ pub fn receiver(socket: *Socket) void {
         var rc_recv = socket.recv(&id_msg);
 
         warn("more: {}\n", .{id_msg.more()});
-
         var id_buffer = id_msg.get_buffer() catch unreachable;
         defer id_buffer.deinit();
         warn("id: 0x{x}\n", .{id_buffer.span()});
@@ -80,23 +88,13 @@ pub fn receiver(socket: *Socket) void {
         defer msg.deinit();
 
         _ = socket.recv(&msg); //sep
-        if (!id_msg.more()) {
+        if (!msg.more()) {
             unreachable;
         }
 
         _ = socket.recv(&msg); //actual package
 
-        // Send response
-        _ = socket.send_more(&id_msg);
-        {
-            var sep_msg = Message.init();
-            defer sep_msg.deinit();
-            _ = socket.send_more(&sep_msg);
 
-            var reply_msg = Message.init();
-            defer reply_msg.deinit();
-            _ = socket.send(&reply_msg);
-        }
         // setup deserializer for package
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
@@ -113,13 +111,36 @@ pub fn receiver(socket: *Socket) void {
             var work_item = wi.AddKnownAddressWorkItem.init(default_allocator, ip_buffer) catch unreachable;
             work.queue_work_item(work_item) catch unreachable;
             warn("ip: {s}\n", .{ip_buffer.span()});
+
+            // Send response
+            _ = socket.send_more(&id_msg);
+        
+            var sep_msg = Message.init();
+            defer sep_msg.deinit();
+            _ = socket.send_more(&sep_msg);
+
+            var reply_msg = Message.init();
+            defer reply_msg.deinit();
+            _ = socket.send(&reply_msg);
         }
         if (tag == 1) {
             warn("got chat\n", .{});
+            // Send response
+            _ = socket.send_more(&id_msg);
+        
+            var sep_msg = Message.init();
+            defer sep_msg.deinit();
+            _ = socket.send_more(&sep_msg);
+
+            var reply_msg = Message.init();
+            defer reply_msg.deinit();
+            _ = socket.send(&reply_msg);
+
             var chat = deserializer.deserialize(Chat) catch unreachable;
             const hash = p2p.blake_hash(chat.message);
-            var optional_kv = sent_map.put(hash, true) catch unreachable;
-            if (optional_kv) |kv| {
+
+            var exists = pool.put(hash[0..]) catch unreachable;
+            if (exists) {
                 continue;
             }
 
@@ -129,6 +150,8 @@ pub fn receiver(socket: *Socket) void {
             var chat_copy = chat.copy() catch unreachable;
             var relay_work_item = wi.RelayWorkItem.init(default_allocator, chat_copy) catch unreachable;
             work.work_queue.push(&relay_work_item.work_item) catch unreachable;
+        }
+        if (tag == 2) {
         }
     }
 }

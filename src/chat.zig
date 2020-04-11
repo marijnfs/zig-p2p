@@ -1,7 +1,8 @@
 const std = @import("std");
+const p2p = @import("p2p.zig");
 const mem = std.mem;
 
-const default_allocator = std.heap.page_allocator;
+const default_allocator = p2p.default_allocator;
 
 pub const Chat = struct {
     user: []u8,

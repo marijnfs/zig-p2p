@@ -1,9 +1,11 @@
 const std = @import("std");
+const p2p = @import("p2p.zig");
+
 const mem = std.mem;
 const Allocator = mem.Allocator;
-const default_allocator = std.heap.page_allocator;
 
-const p2p = @import("p2p.zig");
+const default_allocator = p2p.default_allocator;
+
 const WorkQueue = @import("queue.zig").AtomicQueue(WorkItem);
 const Chat = @import("chat.zig").Chat;
 

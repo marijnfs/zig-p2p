@@ -1,15 +1,18 @@
-const p2p = @import("p2p.zig");
 const std = @import("std");
-const work = p2p.work;
+const p2p = @import("p2p.zig");
 
-const Allocator = std.mem.Allocator;
+const work = p2p.work;
+const pool = p2p.pool;
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
-const default_allocator = std.heap.page_allocator;
+
 const make_work_item = p2p.work.make_work_item;
 const functions = p2p.process_functions;
 const cm = p2p.connection_management;
+
+const Allocator = std.mem.Allocator;
+const default_allocator = std.heap.page_allocator;
 const Buffer = std.ArrayListSentineled(u8, 0);
 
 var PRNG = std.rand.DefaultPrng.init(0);
@@ -115,3 +118,14 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
 }
 
 pub const CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback);
+
+
+const DataRequest = struct {
+    id: Buffer,
+
+};
+
+pub fn process_datarequest_callback(data: *DataRequest) void {
+    
+}
+

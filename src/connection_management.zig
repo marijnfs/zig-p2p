@@ -8,8 +8,9 @@ const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
 const WorkItem = p2p.work.WorkItem;
+var default_allocator = p2p.default_allocator;
+
 const Buffer = std.ArrayListSentineled(u8, 0);
-const default_allocator = std.heap.page_allocator;
 
 pub var context: ?*c_void = undefined; //zmq context
 pub var outgoing_connections: std.ArrayList(OutgoingConnection) = undefined;
