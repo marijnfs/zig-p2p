@@ -51,6 +51,10 @@ pub const Socket = struct {
         return c.zmq_msg_send(@ptrCast([*c]c.struct_zmq_msg_t, &message.msg), self.socket, 0);
     }
 
+    pub fn send_more(self: *Socket, message: *Message) c_int {
+        return c.zmq_msg_send(@ptrCast([*c]c.struct_zmq_msg_t, &message.msg), self.socket, c.ZMQ_SNDMORE);
+    }
+
     pub fn recv(self: *Socket, message: *Message) c_int {
         return c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, &message.msg), self.socket, 0);
     }

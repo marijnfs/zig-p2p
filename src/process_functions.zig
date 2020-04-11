@@ -62,22 +62,45 @@ pub fn connection_manager_reminder(check_period_sec: u64) void {
 pub fn receiver(socket: *Socket) void {
     while (true) {
         //receive a message
+        var id_msg = Message.init();
+        defer id_msg.deinit();
+        var rc_recv = socket.recv(&id_msg);
+
+        warn("more: {}\n", .{id_msg.more()});
+
+        var id_buffer = id_msg.get_buffer() catch unreachable;
+        defer id_buffer.deinit();
+        warn("id: 0x{x}\n", .{id_buffer.span()});
+
+        if (!id_msg.more()) {
+            unreachable;
+        }
+
         var msg = Message.init();
         defer msg.deinit();
-        var rc_recv = socket.recv(&msg);
 
-        warn("more: {}\n", .{msg.more()});
+        _ = socket.recv(&msg); //sep
+        if (!id_msg.more()) {
+            unreachable;
+        }
 
+        _ = socket.recv(&msg); //actual package
+
+        // Send response
+        _ = socket.send_more(&id_msg);
+        {
+            var sep_msg = Message.init();
+            defer sep_msg.deinit();
+            _ = socket.send_more(&sep_msg);
+
+            var reply_msg = Message.init();
+            defer reply_msg.deinit();
+            _ = socket.send(&reply_msg);
+        }
+        // setup deserializer for package
         var buffer = msg.get_buffer() catch unreachable;
         defer buffer.deinit();
 
-        //send response immediately
-        var return_msg = Message.init();
-        defer return_msg.deinit();
-
-        var rc_send = socket.send(&return_msg);
-
-        // get chat
         var deserializer = p2p.deserialize_tagged(buffer.span(), default_allocator);
         defer deserializer.deinit();
 
