@@ -352,7 +352,9 @@ pub fn SerializerAllocate(comptime endian: builtin.Endian, comptime packing: Pac
                 .Enum => {
                     try self.serializeInt(@enumToInt(value));
                 },
-                else => @compileError("Cannot serialize " ++ @tagName(@typeInfo(T)) ++ " types (unimplemented)."),
+                else => {
+
+                },
             }
         }
     };

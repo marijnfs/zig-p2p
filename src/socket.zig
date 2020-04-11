@@ -58,8 +58,10 @@ pub const Socket = struct {
         return c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, message.msg), self.socket, 0);
     }
 
-    pub fn recv2(self: *Socket, message: *Message) c_int {
-        return c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, message.msg), self.socket, 0);
+    pub fn recv2(self: *Socket) !Message {
+        var message = try Message.init();
+        var rc = c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, message.msg), self.socket, 0);
+        return message;
     }
 
 };

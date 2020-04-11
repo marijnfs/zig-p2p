@@ -23,7 +23,7 @@ const default_allocator = std.heap.page_allocator;
 
 const c = p2p.c;
 
-var bind_socket: Socket = undefined;
+pub var bind_socket: Socket = undefined;
 
 pub fn init() !void {
     p2p.init();
@@ -32,11 +32,32 @@ pub fn init() !void {
 
 var username: [:0]const u8 = undefined;
 
-pub fn add_to_pool_callback(chat: *Chat) void {
-    warn("callback: {}\n", .{chat});
+
+const IdMessage = struct {
+    id: [4]u8,
+    buffer: Buffer,
+
+    fn deinit(self: *IdMessage) void {
+        self.buffer.deinit();
+    }
+};
+
+pub fn send_to_bind_socket(id_message: *IdMessage) void {
+    var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
+    defer id_msg.deinit();
+    var rc = bind_socket.send(&id_msg);
+
+    var delim_msg = Message.init() catch unreachable;
+    defer delim_msg.deinit();
+    rc = bind_socket.send(&delim_msg);
+
+
+    var payload_msg = Message.init_slice(id_message.buffer.span()) catch unreachable;
+    defer payload_msg.deinit();
+    rc = bind_socket.send(&payload_msg);
 }
 
-pub const AddToPoolWorkItem = work.make_work_item(Chat, add_to_pool_callback);
+pub const SendToBindSocketWorkItem = work.make_work_item(IdMessage, send_to_bind_socket);
 
 
 pub fn main() anyerror!void {

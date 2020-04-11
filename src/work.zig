@@ -66,7 +66,7 @@ pub fn make_work_item(comptime WorkType: type, work_function: fn (data: *WorkTyp
 
         pub fn deinit(work_item: *WorkItem) void {
             const self = @fieldParentPtr(Self, "work_item", work_item);
-            if (comptime std.meta.trait.hasFn("deinit")(Self))
+            if (comptime std.meta.trait.hasFn("deinit")(WorkType))
                 self.work_data.deinit();
         }
 

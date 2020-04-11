@@ -36,7 +36,6 @@ pub const SendChatWorkItem = make_work_item(Chat, send_callback);
 
 // pub const PresentWorkItem = make_work_item(Chat, present_callback);
 
-
 pub fn relay_callback(chat: *Chat) void {
     var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
     defer buffer.deinit();
