@@ -35,11 +35,13 @@ pub fn connection_processor(outgoing_connection: *cm.OutgoingConnection) void {
         var rc = outgoing_connection.socket.send(&message);
         if (rc == -1)
             break;
-        var reply = Message.init();
+        var reply = Message.init() catch break;
         rc = outgoing_connection.socket.recv(&reply);
         if (rc == -1)
             break;
     }
+
+    warn("Connection Processor ended\n", .{});
 
     //when we get here the connection must be inactive
     outgoing_connection.active = false;
