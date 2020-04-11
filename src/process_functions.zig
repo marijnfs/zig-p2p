@@ -6,24 +6,18 @@ const Message = p2p.Message;
 const Chat = p2p.Chat;
 const cm = p2p.connection_management;
 const wi = p2p.work_items;
-const Pool = p2p.pool.Pool;
-
+const Pool = p2p.Pool;
 const work = p2p.work;
 
 const default_allocator = p2p.default_allocator;
 
 const c = p2p.c;
-
 const warn = std.debug.warn;
-
-var pool: Pool = undefined;
 
 pub fn init() void {
     var root_pool_name = [_]u8{0} ** 32;
     var name = "ROOT";
     std.mem.copy(u8, root_pool_name[0..name.len], name);
-
-    pool = Pool.init(default_allocator, root_pool_name);
 }
 
 
@@ -64,95 +58,6 @@ pub fn connection_manager_reminder(check_period_sec: u64) void {
         std.time.sleep(400000000);
         var check_connection_item = wi.CheckConnectionWorkItem.init(default_allocator, .{}) catch unreachable;
         work.work_queue.push(&check_connection_item.work_item) catch unreachable;
-    }
-}
-
-// Socket reader thread
-pub fn receiver(socket: *Socket) void {
-    while (true) {
-        //receive a message
-        var id_msg = Message.init();
-        defer id_msg.deinit();
-        var rc_recv = socket.recv(&id_msg);
-
-        warn("more: {}\n", .{id_msg.more()});
-        var id_buffer = id_msg.get_buffer() catch unreachable;
-        defer id_buffer.deinit();
-        warn("id: 0x{x}\n", .{id_buffer.span()});
-
-        if (!id_msg.more()) {
-            unreachable;
-        }
-
-        var msg = Message.init();
-        defer msg.deinit();
-
-        _ = socket.recv(&msg); //sep
-        if (!msg.more()) {
-            unreachable;
-        }
-
-        _ = socket.recv(&msg); //actual package
-
-
-        // setup deserializer for package
-        var buffer = msg.get_buffer() catch unreachable;
-        defer buffer.deinit();
-
-        var deserializer = p2p.deserialize_tagged(buffer.span(), default_allocator);
-        defer deserializer.deinit();
-
-        var tag = deserializer.tag() catch unreachable;
-        if (tag == 0) {
-            warn("got hello\n", .{});
-            var ip = msg.get_peer_ip4();
-            var ip_buffer = cm.ip4_to_zeromq(ip, 4040) catch unreachable;
-
-            var work_item = wi.AddKnownAddressWorkItem.init(default_allocator, ip_buffer) catch unreachable;
-            work.queue_work_item(work_item) catch unreachable;
-            warn("ip: {s}\n", .{ip_buffer.span()});
-
-            // Send response
-            _ = socket.send_more(&id_msg);
-        
-            var sep_msg = Message.init();
-            defer sep_msg.deinit();
-            _ = socket.send_more(&sep_msg);
-
-            var reply_msg = Message.init();
-            defer reply_msg.deinit();
-            _ = socket.send(&reply_msg);
-        }
-        if (tag == 1) {
-            warn("got chat\n", .{});
-            // Send response
-            _ = socket.send_more(&id_msg);
-        
-            var sep_msg = Message.init();
-            defer sep_msg.deinit();
-            _ = socket.send_more(&sep_msg);
-
-            var reply_msg = Message.init();
-            defer reply_msg.deinit();
-            _ = socket.send(&reply_msg);
-
-            var chat = deserializer.deserialize(Chat) catch unreachable;
-            const hash = p2p.blake_hash(chat.message);
-
-            var exists = pool.put(hash[0..]) catch unreachable;
-            if (exists) {
-                continue;
-            }
-
-            var present_work_item = wi.PresentWorkItem.init(default_allocator, chat) catch unreachable;
-            work.work_queue.push(&present_work_item.work_item) catch unreachable;
-
-            var chat_copy = chat.copy() catch unreachable;
-            var relay_work_item = wi.RelayWorkItem.init(default_allocator, chat_copy) catch unreachable;
-            work.work_queue.push(&relay_work_item.work_item) catch unreachable;
-        }
-        if (tag == 2) {
-        }
     }
 }
 

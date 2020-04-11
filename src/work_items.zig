@@ -30,11 +30,12 @@ pub fn send_callback(chat: *Chat) void {
 
 pub const SendChatWorkItem = make_work_item(Chat, send_callback);
 
-pub fn present_callback(chat: *Chat) void {
-    std.debug.warn("{}: {}\n", .{ chat.user, chat.message });
-}
+// pub fn present_callback(chat: *Chat) void {
+//     std.debug.warn("{}: {}\n", .{ chat.user, chat.message });
+// }
 
-pub const PresentWorkItem = make_work_item(Chat, present_callback);
+// pub const PresentWorkItem = make_work_item(Chat, present_callback);
+
 
 pub fn relay_callback(chat: *Chat) void {
     var buffer = p2p.serialize_tagged(1, chat) catch unreachable;

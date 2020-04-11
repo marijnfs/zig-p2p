@@ -4,6 +4,8 @@ const mem = std.mem;
 
 const default_allocator = p2p.default_allocator;
 
+
+
 pub const Chat = struct {
     user: []u8,
     message: []u8,
@@ -28,7 +30,7 @@ pub const Chat = struct {
         default_allocator.free(self.message);
     }
 
-    pub fn copy(self: *Chat) !Chat {
+    pub fn copy(self: Chat) !Chat {
         const user_buf = try mem.dupe(default_allocator, u8, self.user);
         const message_buf = try mem.dupe(default_allocator, u8, self.message);
         return Chat{

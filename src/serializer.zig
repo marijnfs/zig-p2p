@@ -43,7 +43,6 @@ const DeserializerTagged = struct {
     allocator: *std.mem.Allocator,
 
     pub fn init(buffer: []u8, allocator: *std.mem.Allocator) Self {
-        std.debug.warn("Start from buffer len: {}\n", .{buffer.len});
         var deserializer_tagged = DeserializerTagged{
             .buffer = std.io.fixedBufferStream(buffer),
             .allocator = allocator,

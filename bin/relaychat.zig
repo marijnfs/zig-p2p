@@ -1,5 +1,9 @@
 const std = @import("std");
 const p2p = @import("p2p");
+
+const chat_functions = @import("chat_functions.zig");
+const router_receiver = chat_functions.router_receiver;
+
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const work = p2p.work;
@@ -23,9 +27,17 @@ var bind_socket: Socket = undefined;
 
 pub fn init() !void {
     p2p.init();
+    chat_functions.init();
 }
 
 var username: [:0]const u8 = undefined;
+
+pub fn add_to_pool_callback(chat: *Chat) void {
+    warn("callback: {}\n", .{chat});
+}
+
+pub const AddToPoolWorkItem = work.make_work_item(Chat, add_to_pool_callback);
+
 
 pub fn main() anyerror!void {
     warn("Chat\n", .{});
@@ -49,7 +61,7 @@ pub fn main() anyerror!void {
     bind_socket = Socket.init(cm.context, c.ZMQ_ROUTER);
     try bind_socket.bind(bind_point);
 
-    var receiver_thread = try std.Thread.spawn(&bind_socket, functions.receiver);
+    var receiver_thread = try std.Thread.spawn(&bind_socket, router_receiver);
     var line_reader_thread = try std.Thread.spawn(username, functions.line_reader);
     var manager_period: u64 = 4;
     var connection_manager_reminder_thread = try std.Thread.spawn(manager_period, functions.connection_manager_reminder);
