@@ -38,7 +38,7 @@ pub const OutgoingConnection = struct {
 
         return OutgoingConnection{
             .socket = connect_socket,
-            .send_queue = p2p.AtomicQueue(Message).init(default_allocator),
+            .work_queue = p2p.work.WorkQueue.init(default_allocator),
             .connect_point = try Buffer.init(default_allocator, connect_point),
             .active = true,
         };
@@ -48,16 +48,16 @@ pub const OutgoingConnection = struct {
         self.connect_point.deinit();
     }
 
-    pub fn queue_message(self: *Self, message: Message) !void {
-        try self.send_queue.push(message);
+    pub fn queue_work_item(self: *OutgoingConnection, value: var) !void {
+        try self.work_queue.queue_work_item(value);
     }
 
-    pub fn queue_tagged_data(self: *Self, tag: i64, value: var) void {
-        
+    pub fn start_work_process(self: *OutgoingConnection) void {
+        self.work_queue.start_work_process() catch return;
     }
 
     connect_point: Buffer,
-    send_queue: p2p.AtomicQueue(Message),
+    work_queue: p2p.work.WorkQueue,
     socket: Socket,
     active: bool
 };

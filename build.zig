@@ -1,6 +1,8 @@
 const std = @import("std");
 const fmt = std.fmt;
 const Builder = std.build.Builder;
+const Package = @import("std").build.Pkg;
+
 var allocator = std.heap.page_allocator;
 
 fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
@@ -19,6 +21,7 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
     exe.addLibPath("/usr/lib64");
     exe.addLibPath("/usr/lib64/gcc/x86_64-suse-linux/7");
     exe.linkSystemLibrary("zmq");
+
     exe.addPackagePath("chat", "src/chat/chat.zig");
     exe.addPackagePath("p2p", "src/p2p/p2p.zig");
     exe.linkLibC();

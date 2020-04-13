@@ -38,18 +38,18 @@ pub const WorkQueue = struct {
     }
 
     pub fn queue_work_item(self: *WorkQueue, value: var) !void {
-        try self.work_queue.push(&value.work_item);
+        try self.queue.push(&value.work_item);
     }
 
     //Main worker function, grabbing work items and processing them
     pub fn work_process(work_queue: *WorkQueue) void {
         while (true) {
-            if (work_queue.empty()) {
+            if (work_queue.queue.empty()) {
                 std.time.sleep(100000);
                 continue;
             }
 
-            var work_item = work_queue.pop() catch unreachable;
+            var work_item = work_queue.queue.pop() catch unreachable;
             defer work_item.deinit();
 
             work_item.process();

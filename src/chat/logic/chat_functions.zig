@@ -44,17 +44,6 @@ pub fn init() void {
 
 }
 
-const Router = struct {
-    socket: Socket,
-
-    callback: std.AutoHashMap(i32, fn (buffer: Buffer) void),
-
-    pub fn init() Router {
-
-    }
-
-
-};
 
 // Socket reader thread
 pub fn router_receiver(socket: *Socket) void {
