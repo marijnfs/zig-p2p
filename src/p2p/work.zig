@@ -4,13 +4,10 @@ const p2p = @import("p2p.zig");
 const mem = std.mem;
 const Allocator = mem.Allocator;
 
-const default_allocator = p2p.default_allocator;
+// Default work item.
+// Work Items should embed this and link the function pointers deinit_fn and process_fn to their deinit and process functions.
+// Use make_work_item to create such work items.
 
-const WorkQueue = @import("queue.zig").AtomicQueue(WorkItem);
-const Chat = @import("chat.zig").Chat;
-
-//Default work item.
-//Work Items should embed this and link the function pointers deinit_fn and process_fn to their deinit and process functions.
 pub const WorkItem = struct {
     const Self = @This();
 
@@ -31,11 +28,39 @@ pub const WorkItem = struct {
     free_fn: fn (work_item: *WorkItem, allocator: *Allocator) void
 };
 
-pub var work_queue: p2p.AtomicQueue(*WorkItem) = undefined;
+pub const WorkQueue = struct {
+    queue: p2p.AtomicQueue(*WorkItem),
 
-pub fn init() void {
-    work_queue = p2p.AtomicQueue(*WorkItem).init(default_allocator);
-}
+    pub fn init(allocator: *Allocator) WorkQueue {
+        return .{
+            .queue = p2p.AtomicQueue(*WorkItem).init(allocator),
+        };
+    }
+
+    pub fn queue_work_item(self: *WorkQueue, value: var) !void {
+        try self.work_queue.push(&value.work_item);
+    }
+
+    //Main worker function, grabbing work items and processing them
+    pub fn work_process(work_queue: *WorkQueue) void {
+        while (true) {
+            if (work_queue.empty()) {
+                std.time.sleep(100000);
+                continue;
+            }
+
+            var work_item = work_queue.pop() catch unreachable;
+            defer work_item.deinit();
+
+            work_item.process();
+        }
+    }
+
+    pub fn start_work_process(self: *WorkQueue) !void {
+        try p2p.thread_pool.add_thread(self, WorkQueue.work_process);
+    }
+};
+
 
 pub const DummyWorkData = struct {
     fn deinit(self: *DummyWorkData) void {}
@@ -75,23 +100,4 @@ pub fn make_work_item(comptime WorkType: type, work_function: fn (data: *WorkTyp
             work_function(&self.work_data);
         }
     };
-}
-
-pub fn queue_work_item(value: var) !void {
-    try work_queue.push(&value.work_item);
-}
-
-//Main worker function, grabbing work items and processing them
-pub fn worker(context: void) void {
-    while (true) {
-        if (work_queue.empty()) {
-            std.time.sleep(100000);
-            continue;
-        }
-
-        var work_item = work_queue.pop() catch unreachable;
-        defer work_item.deinit();
-
-        work_item.process();
-    }
 }

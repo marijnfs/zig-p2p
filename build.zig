@@ -19,7 +19,8 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
     exe.addLibPath("/usr/lib64");
     exe.addLibPath("/usr/lib64/gcc/x86_64-suse-linux/7");
     exe.linkSystemLibrary("zmq");
-    exe.addPackagePath("p2p", "src/p2p.zig");
+    exe.addPackagePath("chat", "src/chat/chat.zig");
+    exe.addPackagePath("p2p", "src/p2p/p2p.zig");
     exe.linkLibC();
     exe.linkSystemLibrary("stdc++");
 

@@ -23,9 +23,11 @@ pub fn init() void {
     context = c.zmq_ctx_new();
 
     outgoing_connections = std.ArrayList(OutgoingConnection).init(default_allocator);
-    connection_threads = std.ArrayList(*std.Thread).init(default_allocator);
     known_addresses = std.ArrayList(Buffer).init(default_allocator);
+    connection_threads = std.ArrayList(*std.Thread).init(default_allocator);
 }
+
+
 
 pub const OutgoingConnection = struct {
     const Self = @This();
@@ -35,8 +37,8 @@ pub const OutgoingConnection = struct {
         try connect_socket.connect(connect_point);
 
         return OutgoingConnection{
-            .send_queue = p2p.AtomicQueue(Message).init(default_allocator),
             .socket = connect_socket,
+            .send_queue = p2p.AtomicQueue(Message).init(default_allocator),
             .connect_point = try Buffer.init(default_allocator, connect_point),
             .active = true,
         };
@@ -48,6 +50,10 @@ pub const OutgoingConnection = struct {
 
     pub fn queue_message(self: *Self, message: Message) !void {
         try self.send_queue.push(message);
+    }
+
+    pub fn queue_tagged_data(self: *Self, tag: i64, value: var) void {
+        
     }
 
     connect_point: Buffer,

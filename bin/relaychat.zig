@@ -1,5 +1,6 @@
 const std = @import("std");
 const p2p = @import("p2p");
+const chat = @import("chat");
 
 const chat_functions = @import("chat_functions.zig");
 const router_receiver = chat_functions.router_receiver;
@@ -27,11 +28,13 @@ pub var bind_socket: Socket = undefined;
 
 pub fn init() !void {
     p2p.init();
-    chat_functions.init();
+    chat.init();
 }
 
 var username: [:0]const u8 = undefined;
 
+
+pub const SendToBindSocketWorkItem = work.make_work_item(IdMessage, send_to_bind_socket);
 
 const IdMessage = struct {
     id: [4]u8,
@@ -41,6 +44,7 @@ const IdMessage = struct {
         self.buffer.deinit();
     }
 };
+
 
 pub fn send_to_bind_socket(id_message: *IdMessage) void {
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
@@ -57,8 +61,16 @@ pub fn send_to_bind_socket(id_message: *IdMessage) void {
     rc = bind_socket.send(&payload_msg);
 }
 
-pub const SendToBindSocketWorkItem = work.make_work_item(IdMessage, send_to_bind_socket);
 
+fn bla(val: i64) void {
+    warn("val: {}\n", .{val});
+
+}
+
+
+pub fn route_callback(val: i64, id: p2p.router.RouteId, id_msg: *p2p.Message) void {
+    warn("Route: {}\n", .{val});
+}
 
 pub fn main() anyerror!void {
     warn("Chat\n", .{});
@@ -71,29 +83,42 @@ pub fn main() anyerror!void {
     username = mem.spanZ(argv[1]);
 
     const bind_point = mem.spanZ(argv[2]);
-    for (argv[3..]) |connect_point_arg| {
-        const connect_point = mem.spanZ(connect_point_arg);
-        var work_item = try wi.AddConnectionWorkItem.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
-        try work.queue_work_item(work_item);
-    }
-
-    warn("Username: {}\n", .{username});
-
     bind_socket = Socket.init(cm.context, c.ZMQ_ROUTER);
-    try bind_socket.bind(bind_point);
 
-    var receiver_thread = try std.Thread.spawn(&bind_socket, router_receiver);
-    var line_reader_thread = try std.Thread.spawn(username, functions.line_reader);
-    var manager_period: u64 = 4;
-    var connection_manager_reminder_thread = try std.Thread.spawn(manager_period, functions.connection_manager_reminder);
+    var router = p2p.Router.init(default_allocator, bind_socket);
+    try router.add_route(1, void, chat.callbacks.greet);
+    try router.add_route(3, i64, route_callback);
+    
+    _ = try router.start_thread();
 
-    // Main worker thread
-    var worker_thread = try std.Thread.spawn({}, work.worker);
+    var val = @as(i64, 43);
+    try p2p.thread_pool.add_thread(val, bla);
+    try p2p.thread_pool.add_thread(username, chat.line_reader);
 
-    receiver_thread.wait();
-    line_reader_thread.wait();
-    worker_thread.wait();
-    connection_manager_reminder_thread.wait();
+    p2p.thread_pool.join();
+    // for (argv[3..]) |connect_point_arg| {
+    //     const connect_point = mem.spanZ(connect_point_arg);
+    //     var work_item = try wi.AddConnectionWorkItem.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
+    //     try work.queue_work_item(work_item);
+    // }
 
-    warn("Binding to: {}", .{bind_point});
+    // warn("Username: {}\n", .{username});
+
+    // bind_socket = Socket.init(cm.context, c.ZMQ_ROUTER);
+    // try bind_socket.bind(bind_point);
+
+    // var receiver_thread = try std.Thread.spawn(&bind_socket, router_receiver);
+    // var line_reader_thread = try std.Thread.spawn(username, functions.line_reader);
+    // var manager_period: u64 = 4;
+    // var connection_manager_reminder_thread = try std.Thread.spawn(manager_period, functions.connection_manager_reminder);
+
+    // // Main worker thread
+    // var worker_thread = try std.Thread.spawn({}, work.worker);
+
+    // receiver_thread.wait();
+    // line_reader_thread.wait();
+    // worker_thread.wait();
+    // connection_manager_reminder_thread.wait();
+
+    // warn("Binding to: {}", .{bind_point});
 }

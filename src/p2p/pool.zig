@@ -14,6 +14,7 @@ pub fn Pool(comptime T: type) type {
 
         items: std.ArrayList(T),
 
+        new_callbacks: std.ArrayList(fn (T) void),
         new_item_callback: fn (T) void,
 
         pub fn put(self: *Self, item: T) !bool {
@@ -28,7 +29,7 @@ pub fn Pool(comptime T: type) type {
             return false;
         }
 
-        pub fn init(allocator: *std.mem.Allocator, uuid: [32]u8, new_item_callback: fn (T) void) Self {
+        pub fn init(allocator: *std.mem.Allocator, uuid: [32]u8) Self {
             return .{
                 .uuid = uuid,
                 .sent_map = std.AutoHashMap([32]u8, T).init(allocator),
@@ -36,5 +37,7 @@ pub fn Pool(comptime T: type) type {
                 .new_item_callback = new_item_callback
             };
         }
+
+        pub fn register_
     };
 }

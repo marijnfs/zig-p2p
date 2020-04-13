@@ -1,8 +1,8 @@
 const std = @import("std");
-const p2p = @import("p2p.zig");
+const p2p = @import("p2p");
 
 const work = p2p.work;
-const pool = p2p.pool;
+const pool = p2p.pool; 
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
@@ -17,6 +17,13 @@ const Buffer = std.ArrayListSentineled(u8, 0);
 
 var PRNG = std.rand.DefaultPrng.init(0);
 
+// Work Items
+pub const SendChatWorkItem = make_work_item(Chat, send_callback);
+pub const RelayWorkItem = make_work_item(Chat, relay_callback);
+pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
+pub const AddKnownAddressWorkItem = make_work_item(AddKnownAddressData, add_known_address_callback);
+pub const CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback);
+
 pub fn send_callback(chat: *Chat) void {
     var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
     defer buffer.deinit();
@@ -28,13 +35,6 @@ pub fn send_callback(chat: *Chat) void {
     }
 }
 
-pub const SendChatWorkItem = make_work_item(Chat, send_callback);
-
-// pub fn present_callback(chat: *Chat) void {
-//     std.debug.warn("{}: {}\n", .{ chat.user, chat.message });
-// }
-
-// pub const PresentWorkItem = make_work_item(Chat, present_callback);
 
 pub fn relay_callback(chat: *Chat) void {
     var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
@@ -45,8 +45,6 @@ pub fn relay_callback(chat: *Chat) void {
         conn.queue_message(msg) catch unreachable;
     }
 }
-
-pub const RelayWorkItem = make_work_item(Chat, relay_callback);
 
 const AddConnectionData = Buffer;
 
@@ -64,7 +62,6 @@ fn add_connection_callback(conn_data: *AddConnectionData) void {
     var connection_thread = std.Thread.spawn(cm.outgoing_connections.ptrAt(0), functions.connection_processor) catch unreachable;
     cm.connection_threads.append(connection_thread) catch unreachable;
 }
-pub const AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback);
 
 const AddKnownAddressData = Buffer;
 fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
@@ -75,7 +72,6 @@ fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
     std.debug.warn("Adding: {s}\n", .{conn_data.span()});
     cm.known_addresses.append(Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
 }
-pub const AddKnownAddressWorkItem = make_work_item(AddKnownAddressData, add_known_address_callback);
 
 pub fn check_connection_callback(data: *work.DummyWorkData) void {
     var i: usize = 0;
@@ -117,7 +113,6 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
     // outgoing_connections
 }
 
-pub const CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback);
 
 
 const DataRequest = struct {

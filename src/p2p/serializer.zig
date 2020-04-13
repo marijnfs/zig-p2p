@@ -36,7 +36,7 @@ pub fn serialize_tagged(tag: i64, value: var) !Buffer {
 const FixedBufferStream = std.io.FixedBufferStream([]u8).InStream;
 const DeserializerAllocateType = DeserializerAllocate(.Little, .Byte, FixedBufferStream);
 
-const DeserializerTagged = struct {
+pub const DeserializerTagged = struct {
     const Self = @This();
 
     buffer: std.io.FixedBufferStream([]u8),
