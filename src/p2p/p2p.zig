@@ -16,7 +16,7 @@ pub const serialize_tagged = serializer.serialize_tagged;
 pub const deserialize_tagged = serializer.deserialize_tagged;
 
 pub const AtomicQueue = @import("queue.zig").AtomicQueue;
-pub const work = @import("work.zig");
+pub const event = @import("event.zig");
 pub const proxy = @import("proxy.zig").proxy;
 pub const OutgoingConnection = connection_management.OutgoingConnection;
 
@@ -27,7 +27,6 @@ pub const blake_hash = @import("hash.zig").blake_hash;
 pub const blake_hash_allocate = @import("hash.zig").blake_hash_allocate;
 pub const Pool = @import("pool.zig").Pool;
 
-pub const work_items = @import("work_items.zig");
 pub const c = @import("c.zig").c;
 
 pub const default_allocator = std.heap.page_allocator;

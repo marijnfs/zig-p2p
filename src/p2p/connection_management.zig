@@ -7,7 +7,6 @@ const p2p = @import("p2p.zig");
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
-const WorkItem = p2p.work.WorkItem;
 var default_allocator = p2p.default_allocator;
 
 const Buffer = std.ArrayListSentineled(u8, 0);
@@ -38,7 +37,7 @@ pub const OutgoingConnection = struct {
 
         return OutgoingConnection{
             .socket = connect_socket,
-            .work_queue = p2p.work.WorkQueue.init(default_allocator),
+            .event_queue = p2p.event.EventQueue.init(default_allocator),
             .connect_point = try Buffer.init(default_allocator, connect_point),
             .active = true,
         };
@@ -48,16 +47,16 @@ pub const OutgoingConnection = struct {
         self.connect_point.deinit();
     }
 
-    pub fn queue_work_item(self: *OutgoingConnection, value: var) !void {
-        try self.work_queue.queue_work_item(value);
+    pub fn queue_event(self: *OutgoingConnection, value: var) !void {
+        try self.event_queue.queue_event(value);
     }
 
-    pub fn start_work_process(self: *OutgoingConnection) void {
-        self.work_queue.start_work_process() catch return;
+    pub fn start_event_queue(self: *OutgoingConnection) void {
+        self.event_queue.start_event_queue() catch return;
     }
 
     connect_point: Buffer,
-    work_queue: p2p.work.WorkQueue,
+    event_queue: p2p.event.EventQueue,
     socket: Socket,
     active: bool
 };

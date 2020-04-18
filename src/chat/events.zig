@@ -2,12 +2,11 @@ const std = @import("std");
 const chat = @import("chat.zig");
 const p2p = chat.p2p;
 
-const work = p2p.work;
+const make_event = p2p.event.make_event;
 const pool = p2p.pool; 
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 
-const make_work_item = p2p.work.make_work_item;
 const cm = p2p.connection_management;
 
 const Allocator = std.mem.Allocator;
@@ -17,14 +16,14 @@ const Buffer = std.ArrayListSentineled(u8, 0);
 var PRNG = std.rand.DefaultPrng.init(0);
 
 // Work Items
-pub const WorkItems = .{
-    .SendToBindSocket = work.make_work_item(RouterIdMessage, send_to_bind_socket),
-    // .ReplyRouter = make_work_item(chat.ChatMessage, send_callback),
-    // .SendChatWorkItem = make_work_item(chat.ChatMessage, send_callback),
-    // .RelayWorkItem = make_work_item(chat.ChatMessage, relay_callback),
-    .AddConnectionWorkItem = make_work_item(AddConnectionData, add_connection_callback),
-    .AddKnownAddressWorkItem = make_work_item(AddKnownAddressData, add_known_address_callback),
-    .SendMessage = make_work_item(SendMessageData, send_message_callback)
+pub const Events = .{
+    .SendToBindSocket = make_event(RouterIdMessage, send_to_bind_socket),
+    // .ReplyRouter = make_event(chat.ChatMessage, send_callback),
+    // .SendChatWorkItem = make_event(chat.ChatMessage, send_callback),
+    // .RelayWorkItem = make_event(chat.ChatMessage, relay_callback),
+    .AddConnection = make_event(AddConnectionData, add_connection_callback),
+    .AddKnownAddress = make_event(AddKnownAddressData, add_known_address_callback),
+    .SendMessage = make_event(SendMessageData, send_message_callback)
     // .CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback),
 };
 
@@ -97,13 +96,13 @@ const AddConnectionData = Buffer;
 fn add_connection_callback(connection_point: *AddConnectionData) void {
     std.debug.warn("connecting to: {}\n", .{connection_point.span()});
     var outgoing_connection = cm.OutgoingConnection.init(connection_point.span()) catch return;
-    outgoing_connection.start_work_process();
+    outgoing_connection.start_event_queue();
 
     //Say hello
     var buffer = p2p.serialize_tagged(0, @as(i64, 0)) catch unreachable;
-    var work_item = WorkItems.SendMessage.init(default_allocator, .{.socket = outgoing_connection.socket, .buffer = buffer}) catch unreachable;
+    var event = Events.SendMessage.init(default_allocator, .{.socket = outgoing_connection.socket, .buffer = buffer}) catch unreachable;
 
-    outgoing_connection.queue_work_item(work_item) catch unreachable;
+    outgoing_connection.queue_event(event) catch unreachable;
 
     //add connection and start thread
     cm.outgoing_connections.append(outgoing_connection) catch unreachable;
@@ -119,7 +118,7 @@ fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
     cm.known_addresses.append(Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
 }
 
-pub fn check_connection_callback(data: *work.DummyWorkData) void {
+pub fn check_connection_callback(data: *void) void {
     var i: usize = 0;
     while (i < cm.outgoing_connections.items.len) {
         var current = cm.outgoing_connections.ptrAt(i);
@@ -134,7 +133,7 @@ pub fn check_connection_callback(data: *work.DummyWorkData) void {
     }
 }
 
-pub fn expand_connection_callback(data: *work.DummyWorkData) void {
+pub fn expand_connection_callback(data: *void) void {
     const K: usize = 4;
 
     if (cm.known_addresses.items.len > cm.outgoing_connections.items.len) {
@@ -154,8 +153,8 @@ pub fn expand_connection_callback(data: *work.DummyWorkData) void {
             if (found) continue;
             std.debug.warn("add item for: {s}\n", .{selected_address.span()});
 
-            var work_item = AddConnectionWorkItem.init(default_allocator, Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
-            work.queue_work_item(work_item) catch unreachable;
+            var event = AddConnectionWorkItem.init(default_allocator, Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
+            work.queue_event(event) catch unreachable;
         }
     }
     // outgoing_connections

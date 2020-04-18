@@ -1,8 +1,10 @@
 const chat_message = @import("chat_message.zig");
 const process_functions = @import("process_functions.zig");
-pub const work_items = @import("work_items.zig");
-pub const work_queues = @import("work_queues.zig");
-pub const main_work_queue = &work_queues.main_work_queue;
+pub const events = @import("events.zig");
+pub const Events = events.Events;
+
+pub const event_queues = @import("event_queues.zig");
+pub const main_event_queue = &event_queues.main_event_queue;
 
 pub const line_reader = @import("logic/linereader.zig").line_reader;
 
@@ -17,7 +19,7 @@ pub const callbacks = .{
 
 pub const p2p = @import("../p2p/p2p.zig");
 pub fn init() void {
-    work_queues.init();
+    event_queues.init();
 }
 
 pub var router_socket: p2p.Socket = undefined;

@@ -64,12 +64,12 @@ pub fn main() anyerror!void {
 
     for (argv[3..]) |connect_point_arg| {
         const connect_point = mem.spanZ(connect_point_arg);
-        var work_item = try chat.work_items.WorkItems.AddConnectionWorkItem.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
-        try chat.main_work_queue.queue_work_item(work_item);
+        var event = try chat.Events.AddConnection.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
+        try chat.main_event_queue.queue_event(event);
     }
 
     //start main work queue
-    try chat.main_work_queue.start_work_process();
+    try chat.main_event_queue.start_event_queue();
 
     p2p.thread_pool.join();
 }
