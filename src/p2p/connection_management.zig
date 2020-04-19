@@ -42,12 +42,12 @@ pub const OutgoingConnection = struct {
             .active = true,
         };
 
-        try con.connect(connect_point);
+        try con.connect();
         return con;
     }
 
-    pub fn connect(self: *Self, connect_point: [:0]const u8) !void {
-        try self.socket.connect(connect_point);
+    pub fn connect(self: *Self) !void {
+        try self.socket.connect(self.connect_point.span());
     }
 
     pub fn deinit(self: *Self) void {

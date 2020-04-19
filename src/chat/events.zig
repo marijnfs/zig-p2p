@@ -55,11 +55,15 @@ pub fn say_hello_callback(message_data: *SendMessageData) void {
     var msg = Message.init_slice(message_data.buffer.span()) catch return;
     defer msg.deinit();
 
+
+    std.debug.warn("sending msg, sock: {}\n", .{message_data.socket});
     var rc = message_data.socket.send(&msg);
 
+    std.debug.warn("rcv msg\n", .{});
     var rcv_msg = message_data.socket.recv() catch return;
     defer rcv_msg.deinit();
 
+    std.debug.warn("getting buffer\n", .{});
     var buf = rcv_msg.get_buffer() catch return;
     std.debug.warn("Said hello, got {}\n", .{buf.span()});
 }
