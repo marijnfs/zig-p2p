@@ -13,9 +13,12 @@ pub const Router = struct {
     socket: p2p.Socket,
     callback_map: std.AutoHashMap(i64, CallbackType),
 
-    pub fn init(allocator: *std.mem.Allocator, socket: p2p.Socket) Router {
-        return .{
-            .socket = socket,
+    pub fn init(allocator: *std.mem.Allocator, bind_point: [:0]u8) !Router {
+
+        var router_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
+        try router_socket.bind(bind_point);
+        return Router{
+            .socket = router_socket,
             .callback_map = std.AutoHashMap(i64, CallbackType).init(allocator),
         };
     }
@@ -31,10 +34,15 @@ pub const Router = struct {
     }
 
     pub fn router_processor(self: *Router) void {
+        std.debug.warn("start router\n", .{});
         //receive a message
         while (true) {
+            std.debug.warn("router recv\n", .{});
+
             var msg_id = self.socket.recv() catch break;
             defer msg_id.deinit();
+
+            std.debug.warn("router got msg\n", .{});
 
             var id_buffer = msg_id.get_buffer() catch break;
             defer id_buffer.deinit();

@@ -24,10 +24,10 @@ pub const Events = .{
     // .RelayWorkItem = make_event(chat.ChatMessage, relay_callback),
     .AddConnection = make_event(AddConnectionData, add_connection_callback),
     .AddKnownAddress = make_event(AddKnownAddressData, add_known_address_callback),
-    .SendMessage = make_event(SendMessageData, send_message_callback),
-    .SayHello = make_event(SendMessageData, say_hello_callback),
     .InputMessage = make_event(chat.ChatMessage, input_message_callback),
 
+    .SayHello = make_event(SendMessageData, say_hello_callback),
+    .SendChat = make_event(SendMessageData, send_chat_callback),
     // .CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback),
 };
 
@@ -50,14 +50,8 @@ const SendMessageData = struct {
     }
 };
 
-pub fn send_message_callback(message_data: *SendMessageData) void {
-    var msg = Message.init_slice(message_data.buffer.span()) catch return;
-    defer msg.deinit();
-
-    var rc = message_data.socket.send(&msg);
-}
-
 pub fn say_hello_callback(message_data: *SendMessageData) void {
+    std.debug.warn("sending hello\n", .{});
     var msg = Message.init_slice(message_data.buffer.span()) catch return;
     defer msg.deinit();
 
@@ -71,23 +65,49 @@ pub fn say_hello_callback(message_data: *SendMessageData) void {
 }
 
 
+pub fn send_chat_callback(message_data: *SendMessageData) void {
+    var msg = Message.init_slice(message_data.buffer.span()) catch return;
+    defer msg.deinit();
+
+    var rc = message_data.socket.send(&msg);
+
+    var rcv_msg = message_data.socket.recv() catch return;
+    defer rcv_msg.deinit();
+
+    var buf = rcv_msg.get_buffer() catch return;
+    std.debug.warn("Sent chat, got {}\n", .{buf.span()});
+}
+
+
+
 pub fn send_to_bind_socket(id_message: *RouterIdMessage) void {
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
     defer id_msg.deinit();
-    var rc = chat.router_socket.send(&id_msg);
+    var rc = chat.router.socket.send_more(&id_msg);
 
     var delim_msg = Message.init() catch unreachable;
     defer delim_msg.deinit();
-    rc = chat.router_socket.send(&delim_msg);
+    rc = chat.router.socket.send_more(&delim_msg);
 
 
     var payload_msg = Message.init_slice(id_message.buffer.span()) catch unreachable;
     defer payload_msg.deinit();
-    rc = chat.router_socket.send(&payload_msg);
+    rc = chat.router.socket.send(&payload_msg);
 }
 
 pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
     std.debug.warn("Message: {}\n", .{chat_message});
+
+    const held = cm.mutex.acquire();
+    defer held.release();
+
+    for (cm.outgoing_connections.items) |con| {
+        var chat_buffer = messages.AnnounceChat(chat_message) catch continue;
+        var chat_event = Events.SendChat.init(default_allocator, .{.socket = con.socket, .buffer = chat_buffer}) catch unreachable;
+
+        con.queue_event(chat_event) catch continue;
+    }
+
 }
 
 pub fn send_callback(chat_message: *chat.ChatMessage) void {
@@ -115,10 +135,8 @@ pub fn relay_callback(chat: *Chat) void {
 const AddConnectionData = Buffer;
 
 fn add_connection_callback(connection_point: *AddConnectionData) void {
-    // std.debug.warn("connecting to: {}\n", .{connection_point.span()});
     var outgoing_connection = cm.OutgoingConnection.init(connection_point.span()) catch return;
-    // std.debug.warn("outgoing conn: {}\n", .{outgoing_connection});
-    
+
     outgoing_connection.start_event_queue();
 
 

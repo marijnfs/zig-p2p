@@ -24,8 +24,5 @@ pub fn init() void {
     event_queues.init();
 }
 
-pub var router_socket: p2p.Socket = undefined;
 
-pub fn bind_router_socket(bind_point: [:0]const u8) void {
-    router_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
-}
+pub var router: p2p.Router = undefined;

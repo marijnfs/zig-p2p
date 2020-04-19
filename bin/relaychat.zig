@@ -48,14 +48,13 @@ pub fn main() anyerror!void {
 
 
     const bind_point = mem.spanZ(argv[2]);
-    chat.bind_router_socket(bind_point);
+    chat.router = try p2p.Router.init(default_allocator, bind_point);
 
-    var router = p2p.Router.init(default_allocator, chat.router_socket);
-    try router.add_route(0, void, chat.callbacks.greet);
-    try router.add_route(1, chat.ChatMessage, chat.callbacks.incoming_chat);
+    try chat.router.add_route(0, void, chat.callbacks.greet);
+    try chat.router.add_route(1, chat.ChatMessage, chat.callbacks.incoming_chat);
 
     //start router
-    _ = try router.start_thread();
+    _ = try chat.router.start_thread();
 
     //start line reader
     _ = try p2p.thread_pool.add_thread(username, chat.line_reader);

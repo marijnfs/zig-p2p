@@ -14,7 +14,7 @@ const Buffer = std.ArrayListSentineled(u8, 0);
 pub var context: ?*c_void = undefined; //zmq context
 pub var outgoing_connections: std.ArrayList(*OutgoingConnection) = undefined;
 pub var known_addresses: std.ArrayList(Buffer) = undefined;
-pub var connection_threads: std.ArrayList(*std.Thread) = undefined;
+pub var mutex: std.Mutex = undefined;
 
 const c = p2p.c;
 
@@ -23,7 +23,7 @@ pub fn init() void {
 
     outgoing_connections = std.ArrayList(*OutgoingConnection).init(default_allocator);
     known_addresses = std.ArrayList(Buffer).init(default_allocator);
-    connection_threads = std.ArrayList(*std.Thread).init(default_allocator);
+    mutex = std.Mutex.init();
 }
 
 
@@ -33,7 +33,6 @@ pub const OutgoingConnection = struct {
 
     pub fn init(connect_point: [:0]const u8) !*OutgoingConnection {
         var connect_socket = Socket.init(context, c.ZMQ_REQ);
-        try connect_socket.connect(connect_point);
 
         var con = try default_allocator.create(Self);
         con.* = OutgoingConnection{
@@ -42,11 +41,18 @@ pub const OutgoingConnection = struct {
             .connect_point = try Buffer.init(default_allocator, connect_point),
             .active = true,
         };
+
+        try con.connect(connect_point);
         return con;
+    }
+
+    pub fn connect(self: *Self, connect_point: [:0]const u8) !void {
+        try self.socket.connect(connect_point);
     }
 
     pub fn deinit(self: *Self) void {
         self.connect_point.deinit();
+        self.event_queue.deinit();
         self.socket.close();
 
         default_allocator.free(self);
