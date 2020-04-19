@@ -27,11 +27,14 @@ pub const blake_hash = @import("hash.zig").blake_hash;
 pub const blake_hash_allocate = @import("hash.zig").blake_hash_allocate;
 pub const Pool = @import("pool.zig").Pool;
 
+pub const Buffer = std.ArrayListSentineled(u8, 0);
+
+
 pub const c = @import("c.zig").c;
 
 pub const default_allocator = std.heap.page_allocator;
 
 pub fn init() void {
-    connection_management.init();
     thread_pool.init();
+    connection_management.init();
 }

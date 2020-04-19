@@ -30,10 +30,12 @@ pub const Event = struct {
 
 pub const EventQueue = struct {
     queue: p2p.AtomicQueue(*Event),
+    thread: ?*std.Thread,
 
     pub fn init(allocator: *Allocator) EventQueue {
         return .{
             .queue = p2p.AtomicQueue(*Event).init(allocator),
+            .thread = null,
         };
     }
 
@@ -43,6 +45,9 @@ pub const EventQueue = struct {
 
     //Main worker function, grabbing work items and processing them
     pub fn event_processor(event_queue: *EventQueue) void {
+    //     std.debug.warn("event processor: {}\n", .{@ptrToInt(event_queue)});
+    //     std.debug.warn("--: {}\n", .{@ptrToInt(&event_queue.queue)});
+    //     std.debug.warn("--: {}\n", .{event_queue});
         while (true) {
             if (event_queue.queue.empty()) {
                 std.time.sleep(100000);
@@ -57,7 +62,17 @@ pub const EventQueue = struct {
     }
 
     pub fn start_event_queue(self: *EventQueue) !void {
-        try p2p.thread_pool.add_thread(self, EventQueue.event_processor);
+        // std.debug.warn("start event processor: {}\n", .{@ptrToInt(self)});
+        // std.debug.warn("--: {}\n", .{@ptrToInt(&self.queue)});
+        // std.debug.warn("--: {}\n", .{self});
+        self.thread = try p2p.thread_pool.add_thread(self, EventQueue.event_processor);
+    }
+
+    pub fn join(self: *EventQueue) void {
+        std.debug.warn("join\n", .{});
+        if (self.thread) |t| {
+            t.wait();
+        }
     }
 };
 

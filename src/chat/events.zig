@@ -6,12 +6,13 @@ const make_event = p2p.event.make_event;
 const pool = p2p.pool; 
 const Socket = p2p.Socket;
 const Message = p2p.Message;
-
 const cm = p2p.connection_management;
+
+const messages = chat.messages;
 
 const Allocator = std.mem.Allocator;
 const default_allocator = std.heap.page_allocator;
-const Buffer = std.ArrayListSentineled(u8, 0);
+const Buffer = p2p.Buffer;
 
 var PRNG = std.rand.DefaultPrng.init(0);
 
@@ -23,7 +24,10 @@ pub const Events = .{
     // .RelayWorkItem = make_event(chat.ChatMessage, relay_callback),
     .AddConnection = make_event(AddConnectionData, add_connection_callback),
     .AddKnownAddress = make_event(AddKnownAddressData, add_known_address_callback),
-    .SendMessage = make_event(SendMessageData, send_message_callback)
+    .SendMessage = make_event(SendMessageData, send_message_callback),
+    .SayHello = make_event(SendMessageData, say_hello_callback),
+    .InputMessage = make_event(chat.ChatMessage, input_message_callback),
+
     // .CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback),
 };
 
@@ -53,6 +57,19 @@ pub fn send_message_callback(message_data: *SendMessageData) void {
     var rc = message_data.socket.send(&msg);
 }
 
+pub fn say_hello_callback(message_data: *SendMessageData) void {
+    var msg = Message.init_slice(message_data.buffer.span()) catch return;
+    defer msg.deinit();
+
+    var rc = message_data.socket.send(&msg);
+
+    var rcv_msg = message_data.socket.recv() catch return;
+    defer rcv_msg.deinit();
+
+    var buf = rcv_msg.get_buffer() catch return;
+    std.debug.warn("Said hello, got {}\n", .{buf.span()});
+}
+
 
 pub fn send_to_bind_socket(id_message: *RouterIdMessage) void {
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
@@ -67,6 +84,10 @@ pub fn send_to_bind_socket(id_message: *RouterIdMessage) void {
     var payload_msg = Message.init_slice(id_message.buffer.span()) catch unreachable;
     defer payload_msg.deinit();
     rc = chat.router_socket.send(&payload_msg);
+}
+
+pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
+    std.debug.warn("Message: {}\n", .{chat_message});
 }
 
 pub fn send_callback(chat_message: *chat.ChatMessage) void {
@@ -94,13 +115,16 @@ pub fn relay_callback(chat: *Chat) void {
 const AddConnectionData = Buffer;
 
 fn add_connection_callback(connection_point: *AddConnectionData) void {
-    std.debug.warn("connecting to: {}\n", .{connection_point.span()});
+    // std.debug.warn("connecting to: {}\n", .{connection_point.span()});
     var outgoing_connection = cm.OutgoingConnection.init(connection_point.span()) catch return;
+    // std.debug.warn("outgoing conn: {}\n", .{outgoing_connection});
+    
     outgoing_connection.start_event_queue();
 
+
     //Say hello
-    var buffer = p2p.serialize_tagged(0, @as(i64, 0)) catch unreachable;
-    var event = Events.SendMessage.init(default_allocator, .{.socket = outgoing_connection.socket, .buffer = buffer}) catch unreachable;
+    var hello_msg = messages.Hello() catch return;
+    var event = Events.SayHello.init(default_allocator, .{.socket = outgoing_connection.socket, .buffer = hello_msg}) catch unreachable;
 
     outgoing_connection.queue_event(event) catch unreachable;
 

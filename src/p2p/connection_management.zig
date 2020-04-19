@@ -12,7 +12,7 @@ var default_allocator = p2p.default_allocator;
 const Buffer = std.ArrayListSentineled(u8, 0);
 
 pub var context: ?*c_void = undefined; //zmq context
-pub var outgoing_connections: std.ArrayList(OutgoingConnection) = undefined;
+pub var outgoing_connections: std.ArrayList(*OutgoingConnection) = undefined;
 pub var known_addresses: std.ArrayList(Buffer) = undefined;
 pub var connection_threads: std.ArrayList(*std.Thread) = undefined;
 
@@ -21,7 +21,7 @@ const c = p2p.c;
 pub fn init() void {
     context = c.zmq_ctx_new();
 
-    outgoing_connections = std.ArrayList(OutgoingConnection).init(default_allocator);
+    outgoing_connections = std.ArrayList(*OutgoingConnection).init(default_allocator);
     known_addresses = std.ArrayList(Buffer).init(default_allocator);
     connection_threads = std.ArrayList(*std.Thread).init(default_allocator);
 }
@@ -31,20 +31,25 @@ pub fn init() void {
 pub const OutgoingConnection = struct {
     const Self = @This();
 
-    pub fn init(connect_point: [:0]const u8) !OutgoingConnection {
+    pub fn init(connect_point: [:0]const u8) !*OutgoingConnection {
         var connect_socket = Socket.init(context, c.ZMQ_REQ);
         try connect_socket.connect(connect_point);
 
-        return OutgoingConnection{
+        var con = try default_allocator.create(Self);
+        con.* = OutgoingConnection{
             .socket = connect_socket,
             .event_queue = p2p.event.EventQueue.init(default_allocator),
             .connect_point = try Buffer.init(default_allocator, connect_point),
             .active = true,
         };
+        return con;
     }
 
     pub fn deinit(self: *Self) void {
         self.connect_point.deinit();
+        self.socket.close();
+
+        default_allocator.free(self);
     }
 
     pub fn queue_event(self: *OutgoingConnection, value: var) !void {
@@ -52,6 +57,7 @@ pub const OutgoingConnection = struct {
     }
 
     pub fn start_event_queue(self: *OutgoingConnection) void {
+        std.debug.warn("Starting connection event queue: {}\n", .{self.event_queue});
         self.event_queue.start_event_queue() catch return;
     }
 

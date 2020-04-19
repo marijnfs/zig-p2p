@@ -1,5 +1,4 @@
 const std = @import("std");
-//const p2p = @import("../../p2p/p2p.zig");
 const chat = @import("../chat.zig");
 const p2p = chat.p2p;
 const default_allocator = p2p.default_allocator;
@@ -16,11 +15,10 @@ pub fn line_reader(username: [:0]const u8) void {
 
         if (buffer.items.len == 0)
             continue;
-        // set up chat
-        // var chat = Chat.init(username, std.mem.dupeZ(default_allocator, u8, buffer.span()) catch unreachable, std.time.timestamp()) catch unreachable;
 
-        // // add work item to queue
-        // var send_work_item = wi.SendChatWorkItem.init(default_allocator, chat) catch unreachable;
-        // work.work_queue.push(&send_work_item.work_item) catch unreachable;
+        std.debug.warn("buf: {} {}\n", .{buffer.span(), buffer.items.len});
+        var chat_message = chat.ChatMessage.init(username, buffer.span(), 0) catch break;
+        var chat_event = chat.Events.InputMessage.init(default_allocator, chat_message) catch break;
+        chat.main_event_queue.queue_event(chat_event) catch break;
     }
 }

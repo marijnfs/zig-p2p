@@ -15,7 +15,7 @@ const cm = p2p.connection_management;
 
 const mem = std.mem;
 const Allocator = mem.Allocator;
-const Buffer = std.ArrayListSentineled(u8, 0);
+const Buffer = p2p.Buffer;
 
 const functions = p2p.process_functions;
 
@@ -32,8 +32,6 @@ pub fn init() !void {
 }
 
 var username: [:0]const u8 = undefined;
-
-
 
 
 
@@ -60,10 +58,13 @@ pub fn main() anyerror!void {
     _ = try router.start_thread();
 
     //start line reader
-    try p2p.thread_pool.add_thread(username, chat.line_reader);
+    _ = try p2p.thread_pool.add_thread(username, chat.line_reader);
 
+    // Add connections provided are arguments
     for (argv[3..]) |connect_point_arg| {
         const connect_point = mem.spanZ(connect_point_arg);
+        std.debug.warn("Adding connect point: {}\n", .{connect_point});
+        
         var event = try chat.Events.AddConnection.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
         try chat.main_event_queue.queue_event(event);
     }
@@ -71,5 +72,6 @@ pub fn main() anyerror!void {
     //start main work queue
     try chat.main_event_queue.start_event_queue();
 
-    p2p.thread_pool.join();
+    // p2p.thread_pool.join();
+    chat.main_event_queue.join();
 }

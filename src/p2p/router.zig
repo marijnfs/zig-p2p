@@ -72,6 +72,6 @@ pub const Router = struct {
     }
 
     fn start_thread(self: *Router) !void {
-        try p2p.thread_pool.add_thread(self, Router.router_processor);
+        _ = try p2p.thread_pool.add_thread(self, Router.router_processor);
     } 
 };

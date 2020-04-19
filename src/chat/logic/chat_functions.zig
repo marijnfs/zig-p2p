@@ -40,8 +40,7 @@ pub fn new_chat(chat: Chat) void {
 
 pub fn init() void {
     var uuid = std.mem.zeroes([32]u8);
-    chat_pool = Pool(Chat).init(default_allocator, uuid, new_chat);
-
+    chat_pool = Pool(Chat).init(default_allocator, uuid);
 }
 
 

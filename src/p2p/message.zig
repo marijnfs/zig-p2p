@@ -4,7 +4,7 @@ const cm = p2p.connection_management;
 const testing = std.testing;
 const mem = std.mem;
 const Allocator = mem.Allocator;
-const Buffer = std.ArrayListSentineled(u8, 0);
+const Buffer = p2p.Buffer;
 
 const default_allocator = p2p.default_allocator;
 const warn = std.debug.warn;

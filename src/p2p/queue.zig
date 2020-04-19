@@ -9,10 +9,10 @@ pub fn AtomicQueue(comptime T: type) type {
     return struct {
         const Self = @This();
 
-        buffer: ArrayList(T),
         front: usize,
         back: usize,
         mutex: std.Mutex,
+        buffer: ArrayList(T),
 
         pub fn init(allocator: *std.mem.Allocator) Self {
             return Self{
@@ -24,6 +24,7 @@ pub fn AtomicQueue(comptime T: type) type {
         }
 
         fn deinit(self: *Self) void {
+            std.debug.warn("atomic queue deinit\n", .{});
             self.buffer.deinit();
         }
 

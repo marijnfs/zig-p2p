@@ -5,7 +5,7 @@ const DeserializerAllocate = @import("serialization_allocate.zig").DeserializerA
 
 const p2p = @import("p2p.zig");
 const default_allocator = p2p.default_allocator;
-const Buffer = std.ArrayListSentineled(u8, 0);
+const Buffer = p2p.Buffer;
 
 pub fn serialize(value: var) !Buffer {
     var buffer = try Buffer.initSize(default_allocator, 0);
