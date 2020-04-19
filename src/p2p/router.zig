@@ -10,17 +10,28 @@ pub const RouteId = [4]u8;
 pub const Router = struct {
     const CallbackType = fn (*DeserializerTagged, RouteId, *p2p.Message) void;
 
-    socket: p2p.Socket,
+    socket: *p2p.Socket,
     callback_map: std.AutoHashMap(i64, CallbackType),
+    allocator: *std.mem.Allocator,
 
-    pub fn init(allocator: *std.mem.Allocator, bind_point: [:0]u8) !Router {
+    pub fn init(allocator: *std.mem.Allocator, bind_point: [:0]u8) !*Router {
+        var router = try allocator.create(Router);
 
-        var router_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
-        try router_socket.bind(bind_point);
-        return Router{
+        var router_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
+        router.* = Router{
             .socket = router_socket,
             .callback_map = std.AutoHashMap(i64, CallbackType).init(allocator),
+            .allocator = allocator,
         };
+        try router.socket.bind(bind_point);
+
+        return router;
+    }
+
+    pub fn deinit(self: *Router) void {
+        self.socket.deinit();
+        self.callback_map.deinit();
+        self.allocator.free(self);
     }
 
     pub fn add_route(self: *Router, tag: i64, comptime T: type, comptime callback: fn (T, RouteId, *p2p.Message) void) !void {
@@ -37,7 +48,7 @@ pub const Router = struct {
         std.debug.warn("start router\n", .{});
         //receive a message
         while (true) {
-            std.debug.warn("router recv\n", .{});
+            std.debug.warn("router recv: sock{}\n", .{self.socket});
 
             var msg_id = self.socket.recv() catch break;
             defer msg_id.deinit();
@@ -79,7 +90,7 @@ pub const Router = struct {
         }
     }
 
-    fn start_thread(self: *Router) !void {
+    fn start(self: *Router) !void {
         _ = try p2p.thread_pool.add_thread(self, Router.router_processor);
     } 
 };

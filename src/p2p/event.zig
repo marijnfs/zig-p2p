@@ -61,7 +61,7 @@ pub const EventQueue = struct {
         }
     }
 
-    pub fn start_event_queue(self: *EventQueue) !void {
+    pub fn start_event_loop(self: *EventQueue) !void {
         // std.debug.warn("start event processor: {}\n", .{@ptrToInt(self)});
         // std.debug.warn("--: {}\n", .{@ptrToInt(&self.queue)});
         // std.debug.warn("--: {}\n", .{self});

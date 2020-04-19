@@ -25,4 +25,4 @@ pub fn init() void {
 }
 
 
-pub var router: p2p.Router = undefined;
+pub var router: ?*p2p.Router = null;

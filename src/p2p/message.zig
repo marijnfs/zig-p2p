@@ -16,6 +16,8 @@ pub const Message = struct {
     pub fn init() !Message {
         var tmp_msg = try default_allocator.create(c.zmq_msg_t);
         var rc = c.zmq_msg_init(tmp_msg);
+        if (rc == -1)
+            return error.ZMQ_Error;
         return Message{
             .msg = tmp_msg,
         };
@@ -24,6 +26,9 @@ pub const Message = struct {
     pub fn init_slice(buffer: []const u8) !Message {
         var tmp_msg = try default_allocator.create(c.zmq_msg_t);
         var rc = c.zmq_msg_init_size(tmp_msg, buffer.len);
+        if (rc == -1)
+            return error.ZMQ_Error;
+        
         mem.copy(u8, @ptrCast([*]u8, c.zmq_msg_data(tmp_msg))[0..buffer.len], buffer[0..]);
     
         return Message{

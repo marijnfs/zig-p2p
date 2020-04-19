@@ -24,8 +24,6 @@ const default_allocator = std.heap.page_allocator;
 
 const c = p2p.c;
 
-pub var bind_socket: Socket = undefined;
-
 pub fn init() !void {
     p2p.init();
     chat.init();
@@ -50,11 +48,11 @@ pub fn main() anyerror!void {
     const bind_point = mem.spanZ(argv[2]);
     chat.router = try p2p.Router.init(default_allocator, bind_point);
 
-    try chat.router.add_route(0, void, chat.callbacks.greet);
-    try chat.router.add_route(1, chat.ChatMessage, chat.callbacks.incoming_chat);
+    // try chat.router.?.add_route(0, void, chat.callbacks.greet);
+    // try chat.router.?.add_route(1, chat.ChatMessage, chat.callbacks.incoming_chat);
 
     //start router
-    _ = try chat.router.start_thread();
+    // _ = try chat.router.?.start_thread();
 
     //start line reader
     _ = try p2p.thread_pool.add_thread(username, chat.line_reader);
@@ -62,14 +60,13 @@ pub fn main() anyerror!void {
     // Add connections provided are arguments
     for (argv[3..]) |connect_point_arg| {
         const connect_point = mem.spanZ(connect_point_arg);
-        std.debug.warn("Adding connect point: {}\n", .{connect_point});
         
         var event = try chat.Events.AddConnection.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
         try chat.main_event_queue.queue_event(event);
     }
 
     //start main work queue
-    try chat.main_event_queue.start_event_queue();
+    try chat.main_event_queue.start_event_loop();
 
     // p2p.thread_pool.join();
     chat.main_event_queue.join();

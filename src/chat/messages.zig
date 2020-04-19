@@ -3,7 +3,7 @@ const std = @import("std");
 const chat = @import("chat.zig");
 const p2p = chat.p2p;
 
-const Buffer = std.ArrayListSentineled(u8, 0);
+const Buffer = p2p.Buffer;
 
 
 pub fn Hello() !Buffer {

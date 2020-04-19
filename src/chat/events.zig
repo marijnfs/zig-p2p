@@ -42,7 +42,7 @@ const RouterIdMessage = struct {
 };
 
 const SendMessageData = struct {
-    socket: p2p.Socket,
+    socket: *p2p.Socket,
     buffer: Buffer,
 
     fn deinit(self: *RouterIdMessage) void {
@@ -87,16 +87,16 @@ pub fn send_chat_callback(message_data: *SendMessageData) void {
 pub fn send_to_bind_socket(id_message: *RouterIdMessage) void {
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
     defer id_msg.deinit();
-    var rc = chat.router.socket.send_more(&id_msg);
+    var rc = chat.router.?.socket.send_more(&id_msg);
 
     var delim_msg = Message.init() catch unreachable;
     defer delim_msg.deinit();
-    rc = chat.router.socket.send_more(&delim_msg);
+    rc = chat.router.?.socket.send_more(&delim_msg);
 
 
     var payload_msg = Message.init_slice(id_message.buffer.span()) catch unreachable;
     defer payload_msg.deinit();
-    rc = chat.router.socket.send(&payload_msg);
+    rc = chat.router.?.socket.send(&payload_msg);
 }
 
 pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
@@ -141,7 +141,7 @@ const AddConnectionData = Buffer;
 fn add_connection_callback(connection_point: *AddConnectionData) void {
     var outgoing_connection = cm.OutgoingConnection.init(connection_point.span()) catch return;
 
-    outgoing_connection.start_event_queue();
+    outgoing_connection.start_event_loop();
 
 
     //Say hello
