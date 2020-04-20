@@ -69,6 +69,7 @@ pub fn say_hello_callback(message_data: *SendMessageData) void {
 }
 
 pub fn send_chat_callback(message_data: *SendMessageData) void {
+    warn("Sending chat\n", .{});
     var msg = Message.init_slice(message_data.buffer.span()) catch return;
     defer msg.deinit();
 
@@ -82,6 +83,7 @@ pub fn send_chat_callback(message_data: *SendMessageData) void {
 }
 
 pub fn router_reply_callback(id_message: *RouterIdMessage) void {
+    warn("Router reply to {x} :{}\n", .{ id_message.id, id_message.buffer.span() });
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
     defer id_msg.deinit();
     var rc = chat.router.?.socket.send_more(&id_msg);
@@ -139,10 +141,10 @@ fn add_connection_callback(connection_point: *AddConnectionData) void {
     outgoing_connection.start_event_loop();
 
     //Say hello
-    var hello_msg = messages.Hello() catch return;
-    var event = Events.SayHello.init(default_allocator, .{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
+    // var hello_msg = messages.Hello() catch return;
+    // var event = Events.SayHello.init(default_allocator, .{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
 
-    outgoing_connection.queue_event(event) catch unreachable;
+    // outgoing_connection.queue_event(event) catch unreachable;
 
     //add connection and start thread
     cm.outgoing_connections.append(outgoing_connection) catch unreachable;

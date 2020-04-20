@@ -27,8 +27,6 @@ pub fn init() void {
     mutex = std.Mutex.init();
 }
 
-
-
 pub const OutgoingConnection = struct {
     const Self = @This();
 
@@ -46,7 +44,7 @@ pub const OutgoingConnection = struct {
     }
 
     pub fn connect(self: *Self) !void {
-        std.debug.warn("connecting {} {}\n", .{self.socket, self.connect_point.span()});
+        std.debug.warn("connecting {} {}\n", .{ self.socket, self.connect_point.span() });
         try self.socket.connect(self.connect_point.span());
     }
 
@@ -59,12 +57,13 @@ pub const OutgoingConnection = struct {
     }
 
     pub fn queue_event(self: *OutgoingConnection, value: var) !void {
+        std.debug.warn("queueing in outgoing connection {}\n", .{value});
         try self.event_queue.queue_event(value);
     }
 
     pub fn start_event_loop(self: *OutgoingConnection) void {
-        std.debug.warn("Starting connection event queue: {}\n", .{self.event_queue});
-        self.event_queue.start_event_loop() catch return;
+        std.debug.warn("Starting connection event queue: {}\n", .{@ptrToInt(&self.event_queue)});
+        self.event_queue.start_event_loop() catch unreachable;
     }
 
     connect_point: Buffer,

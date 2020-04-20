@@ -45,12 +45,15 @@ pub const EventQueue = struct {
 
     //Main worker function, grabbing work items and processing them
     pub fn event_processor(event_queue: *EventQueue) void {
-    //     std.debug.warn("event processor: {}\n", .{@ptrToInt(event_queue)});
-    //     std.debug.warn("--: {}\n", .{@ptrToInt(&event_queue.queue)});
-    //     std.debug.warn("--: {}\n", .{event_queue});
+        //     std.debug.warn("event processor: {}\n", .{@ptrToInt(event_queue)});
+        //     std.debug.warn("--: {}\n", .{@ptrToInt(&event_queue.queue)});
+        //     std.debug.warn("--: {}\n", .{event_queue});
+        std.debug.warn("start processor {}\n", .{@ptrToInt(event_queue)});
+
         while (true) {
             if (event_queue.queue.empty()) {
-                std.time.sleep(100000);
+                std.time.sleep(100000000);
+                std.debug.warn("event {}\n", .{@ptrToInt(event_queue)});
                 continue;
             }
 
@@ -65,6 +68,8 @@ pub const EventQueue = struct {
         // std.debug.warn("start event processor: {}\n", .{@ptrToInt(self)});
         // std.debug.warn("--: {}\n", .{@ptrToInt(&self.queue)});
         // std.debug.warn("--: {}\n", .{self});
+        std.debug.warn("start event loop {}\n", .{@ptrToInt(self)});
+
         self.thread = try p2p.thread_pool.add_thread(self, EventQueue.event_processor);
     }
 
