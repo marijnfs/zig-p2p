@@ -45,7 +45,7 @@ pub fn main() anyerror!void {
     const bind_point = mem.spanZ(argv[2]);
     chat.router = try p2p.Router.init(default_allocator, bind_point);
 
-    // try chat.router.?.add_route(0, void, chat.callbacks.greet);
+    try chat.router.?.add_route(0, void, chat.callbacks.greet);
     // try chat.router.?.add_route(1, chat.ChatMessage, chat.callbacks.incoming_chat);
 
     // start router

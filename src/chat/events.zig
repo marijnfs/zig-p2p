@@ -19,8 +19,8 @@ var PRNG = std.rand.DefaultPrng.init(0);
 
 // Work Items
 pub const Events = .{
-    .SendToBindSocket = make_event(RouterIdMessage, send_to_bind_socket),
-    // .ReplyRouter = make_event(chat.ChatMessage, send_callback),
+    .RouterReply = make_event(RouterIdMessage, router_reply_callback),
+
     // .SendChatWorkItem = make_event(chat.ChatMessage, send_callback),
     // .RelayWorkItem = make_event(chat.ChatMessage, relay_callback),
     .AddConnection = make_event(AddConnectionData, add_connection_callback),
@@ -33,8 +33,8 @@ pub const Events = .{
 };
 
 // Data Structs
-const RouterIdMessage = struct {
-    id: [4]u8,
+pub const RouterIdMessage = struct {
+    id: p2p.router.RouteId,
     buffer: Buffer,
 
     fn deinit(self: *RouterIdMessage) void {
@@ -81,7 +81,7 @@ pub fn send_chat_callback(message_data: *SendMessageData) void {
     warn("Sent chat, got {}\n", .{buf.span()});
 }
 
-pub fn send_to_bind_socket(id_message: *RouterIdMessage) void {
+pub fn router_reply_callback(id_message: *RouterIdMessage) void {
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
     defer id_msg.deinit();
     var rc = chat.router.?.socket.send_more(&id_msg);

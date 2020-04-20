@@ -28,9 +28,9 @@ pub const Message = struct {
         var rc = c.zmq_msg_init_size(tmp_msg, buffer.len);
         if (rc == -1)
             return error.ZMQ_Error;
-        
+
         mem.copy(u8, @ptrCast([*]u8, c.zmq_msg_data(tmp_msg))[0..buffer.len], buffer[0..]);
-    
+
         return Message{
             .msg = tmp_msg,
         };
