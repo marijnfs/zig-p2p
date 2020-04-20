@@ -31,8 +31,6 @@ pub fn init() !void {
 
 var username: [:0]const u8 = undefined;
 
-
-
 pub fn main() anyerror!void {
     warn("Chat\n", .{});
     try init();
@@ -44,15 +42,14 @@ pub fn main() anyerror!void {
     username = mem.spanZ(argv[1]);
     warn("Username: {}\n", .{username});
 
-
     const bind_point = mem.spanZ(argv[2]);
     chat.router = try p2p.Router.init(default_allocator, bind_point);
 
     // try chat.router.?.add_route(0, void, chat.callbacks.greet);
     // try chat.router.?.add_route(1, chat.ChatMessage, chat.callbacks.incoming_chat);
 
-    //start router
-    // _ = try chat.router.?.start_thread();
+    // start router
+    _ = try chat.router.?.start();
 
     //start line reader
     _ = try p2p.thread_pool.add_thread(username, chat.line_reader);
@@ -60,7 +57,7 @@ pub fn main() anyerror!void {
     // Add connections provided are arguments
     for (argv[3..]) |connect_point_arg| {
         const connect_point = mem.spanZ(connect_point_arg);
-        
+
         var event = try chat.Events.AddConnection.init(default_allocator, Buffer.init(default_allocator, connect_point) catch unreachable);
         try chat.main_event_queue.queue_event(event);
     }

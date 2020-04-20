@@ -1,15 +1,13 @@
 const std = @import("std");
 const p2p = @import("p2p");
-const chat = @import("chat");
+// const chat = @import("chat");
 const warn = std.debug.warn;
-const default_allocator = std.heap.page_allocator;
-
-
-pub var bind_socket: Socket = undefined;
+// const default_allocator = std.heap.page_allocator;
+const c = p2p.c;
 
 pub fn init() !void {
-    p2p.init();
-    chat.init();
+    // p2p.init();
+    // chat.init();
 }
 
 pub fn main() anyerror!void {
@@ -18,25 +16,45 @@ pub fn main() anyerror!void {
 
     var argv = std.os.argv;
     if (argv.len < 2) {
-        std.debug.panic("Not enough arguments: usage {} [username] [bind_point] [connection points] x N, e.g. bind_point = ipc:///tmp/dummy\n", .{argv[0]});
+        std.debug.panic("Not enough arguments: usage {} [username] [connect_point] [connection points] x N, e.g. connect_point = ipc:///tmp/dummy\n", .{argv[0]});
     }
     var connect_point = std.mem.spanZ(argv[1]);
 
+    // var router = try p2p.Router.init(default_allocator, connect_point);
+    // try router.start();
+    // std.debug.warn("context: {}\n", .{p2p.connection_management.context});
+    // var sock = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
+    // try sock.bind(connect_point);
 
-    var outgoing = try p2p.OutgoingConnection.init(connect_point);
-    // outgoing.start_event_loop();
+    var context = c.zmq_ctx_new();
+    //var socket: ?*c_void = undefined;
+    warn("context: {}\n", .{context});
+    var socket = c.zmq_socket(context, p2p.c.ZMQ_REQ);
 
-    var hello_msg = try chat.messages.Hello();
-    warn("hello buf: {x}\n", .{hello_msg.span()});
+    var rc = c.zmq_connect(socket, connect_point);
+    if (rc == -1)
+        return error.ZMQ_Error;
 
-    var some_message = try p2p.Message.init_slice(hello_msg.span());
-    try outgoing.socket.send(&some_message);
+    var msg: c.zmq_msg_t = undefined;
+    rc = c.zmq_msg_init(&msg);
+    if (rc == -1)
+        return error.ZMQ_Error;
 
-    // var reply_message = outgoing.socket.recv(); 
+    rc = c.zmq_msg_send(&msg, socket, 0);
+    // rc = c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, &msg), socket, 0);
+    if (rc == -1)
+        return error.ZMQ_Error;
 
-    // var chat_event = try chat.Events.SayHello.init(default_allocator, .{.socket = &outgoing.socket, .buffer = hello_msg});
-    // try outgoing.queue_event(chat_event);
+    var rcv_msg: c.zmq_msg_t = undefined;
+    rc = c.zmq_msg_init(&rcv_msg);
+    if (rc == -1)
+        return error.ZMQ_Error;
+
+    rc = c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, &rcv_msg), socket, 0);
+
+    // var bla = sock.recv();
+
+    //var bla = router.socket.recv();
 
     p2p.thread_pool.join();
 }
-

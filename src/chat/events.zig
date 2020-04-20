@@ -3,7 +3,7 @@ const chat = @import("chat.zig");
 const p2p = chat.p2p;
 
 const make_event = p2p.event.make_event;
-const pool = p2p.pool; 
+const pool = p2p.pool;
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const cm = p2p.connection_management;
@@ -13,6 +13,7 @@ const messages = chat.messages;
 const Allocator = std.mem.Allocator;
 const default_allocator = std.heap.page_allocator;
 const Buffer = p2p.Buffer;
+const warn = std.debug.warn;
 
 var PRNG = std.rand.DefaultPrng.init(0);
 
@@ -51,23 +52,21 @@ const SendMessageData = struct {
 };
 
 pub fn say_hello_callback(message_data: *SendMessageData) void {
-    std.debug.warn("sending hello\n", .{});
+    warn("sending hello\n", .{});
     var msg = Message.init_slice(message_data.buffer.span()) catch return;
     defer msg.deinit();
 
-
-    std.debug.warn("sending msg, sock: {}\n", .{message_data.socket});
+    warn("sending msg, sock: {}\n", .{message_data.socket});
     var rc = message_data.socket.send(&msg);
 
-    std.debug.warn("rcv msg\n", .{});
+    warn("rcv msg\n", .{});
     var rcv_msg = message_data.socket.recv() catch return;
     defer rcv_msg.deinit();
 
-    std.debug.warn("getting buffer\n", .{});
+    warn("getting buffer\n", .{});
     var buf = rcv_msg.get_buffer() catch return;
-    std.debug.warn("Said hello, got {}\n", .{buf.span()});
+    warn("Said hello, got {}\n", .{buf.span()});
 }
-
 
 pub fn send_chat_callback(message_data: *SendMessageData) void {
     var msg = Message.init_slice(message_data.buffer.span()) catch return;
@@ -79,10 +78,8 @@ pub fn send_chat_callback(message_data: *SendMessageData) void {
     defer rcv_msg.deinit();
 
     var buf = rcv_msg.get_buffer() catch return;
-    std.debug.warn("Sent chat, got {}\n", .{buf.span()});
+    warn("Sent chat, got {}\n", .{buf.span()});
 }
-
-
 
 pub fn send_to_bind_socket(id_message: *RouterIdMessage) void {
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
@@ -93,25 +90,24 @@ pub fn send_to_bind_socket(id_message: *RouterIdMessage) void {
     defer delim_msg.deinit();
     rc = chat.router.?.socket.send_more(&delim_msg);
 
-
     var payload_msg = Message.init_slice(id_message.buffer.span()) catch unreachable;
     defer payload_msg.deinit();
     rc = chat.router.?.socket.send(&payload_msg);
 }
 
 pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
-    std.debug.warn("Message: {}\n", .{chat_message});
+    warn("Input Message: {}\n", .{chat_message});
 
     const held = cm.mutex.acquire();
     defer held.release();
 
     for (cm.outgoing_connections.items) |con| {
+        warn("adding announce chat\n", .{});
         var chat_buffer = messages.AnnounceChat(chat_message) catch continue;
-        var chat_event = Events.SendChat.init(default_allocator, .{.socket = con.socket, .buffer = chat_buffer}) catch unreachable;
+        var chat_event = Events.SendChat.init(default_allocator, .{ .socket = con.socket, .buffer = chat_buffer }) catch unreachable;
 
         con.queue_event(chat_event) catch continue;
     }
-
 }
 
 pub fn send_callback(chat_message: *chat.ChatMessage) void {
@@ -124,7 +120,6 @@ pub fn send_callback(chat_message: *chat.ChatMessage) void {
         cm.outgoing_connections.ptrAt(i).queue_message(msg) catch unreachable;
     }
 }
-
 
 pub fn relay_callback(chat: *Chat) void {
     var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
@@ -143,10 +138,9 @@ fn add_connection_callback(connection_point: *AddConnectionData) void {
 
     outgoing_connection.start_event_loop();
 
-
     //Say hello
     var hello_msg = messages.Hello() catch return;
-    var event = Events.SayHello.init(default_allocator, .{.socket = outgoing_connection.socket, .buffer = hello_msg}) catch unreachable;
+    var event = Events.SayHello.init(default_allocator, .{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
 
     outgoing_connection.queue_event(event) catch unreachable;
 
@@ -160,7 +154,7 @@ fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
         if (std.mem.eql(u8, addr.span(), conn_data.span()))
             return;
     }
-    std.debug.warn("Adding: {s}\n", .{conn_data.span()});
+    warn("Adding: {s}\n", .{conn_data.span()});
     cm.known_addresses.append(Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
 }
 
@@ -169,7 +163,7 @@ pub fn check_connection_callback(data: *void) void {
     while (i < cm.outgoing_connections.items.len) {
         var current = cm.outgoing_connections.ptrAt(i);
         if (!current.active) {
-            std.debug.warn("Removing connection: {}\n", .{current});
+            warn("Removing connection: {}\n", .{current});
 
             current.deinit();
             _ = cm.outgoing_connections.swapRemove(i);
@@ -186,7 +180,7 @@ pub fn expand_connection_callback(data: *void) void {
         var n: usize = 0;
         while (n < 1 and cm.outgoing_connections.items.len < K) : (n += 1) {
             var selection = PRNG.random.uintLessThan(usize, cm.known_addresses.items.len);
-            std.debug.warn("selection: {}/{}\n", .{ selection, cm.known_addresses.items.len });
+            warn("selection: {}/{}\n", .{ selection, cm.known_addresses.items.len });
             var selected_address = cm.known_addresses.ptrAt(selection);
 
             var found: bool = false;
@@ -197,7 +191,7 @@ pub fn expand_connection_callback(data: *void) void {
                 }
             }
             if (found) continue;
-            std.debug.warn("add item for: {s}\n", .{selected_address.span()});
+            warn("add item for: {s}\n", .{selected_address.span()});
 
             var event = AddConnectionWorkItem.init(default_allocator, Buffer.initFromBuffer(selected_address.*) catch unreachable) catch unreachable;
             work.queue_event(event) catch unreachable;
@@ -206,14 +200,8 @@ pub fn expand_connection_callback(data: *void) void {
     // outgoing_connections
 }
 
-
-
 const DataRequest = struct {
     id: Buffer,
-
 };
 
-pub fn process_datarequest_callback(data: *DataRequest) void {
-    
-}
-
+pub fn process_datarequest_callback(data: *DataRequest) void {}

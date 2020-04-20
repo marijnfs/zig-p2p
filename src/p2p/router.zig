@@ -1,7 +1,6 @@
 const p2p = @import("p2p.zig");
 const std = @import("std");
 
-
 const default_allocator = p2p.default_allocator;
 const DeserializerTagged = p2p.serializer.DeserializerTagged;
 
@@ -66,12 +65,13 @@ pub const Router = struct {
 
             //delimiter
             var msg_delim = self.socket.recv() catch break;
+            defer msg_delim.deinit();
             if (!msg_delim.more()) {
                 break;
             }
 
             var msg_payload = self.socket.recv() catch break; //actual package
-
+            defer msg_payload.deinit();
 
             // setup deserializer for package
             var buffer = msg_payload.get_buffer() catch break;
@@ -84,13 +84,21 @@ pub const Router = struct {
             var callback_kv = self.callback_map.get(tag);
             if (callback_kv == null) {
                 std.debug.warn("False tag: {}\n", .{tag});
+                // reply that this tag is unknown
+
+                self.socket.send_more(&msg_id) catch break;
+                self.socket.send_more(&msg_delim) catch break;
+                self.socket.send(&msg_delim) catch break; //send empty payload
+
                 continue;
             }
             callback_kv.?.value(&deserializer, id, &msg_id);
         }
+
+        std.debug.warn("Router stopped\n", .{});
     }
 
     fn start(self: *Router) !void {
         _ = try p2p.thread_pool.add_thread(self, Router.router_processor);
-    } 
+    }
 };
