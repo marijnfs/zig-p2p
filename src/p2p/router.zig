@@ -9,7 +9,8 @@ pub const RouteId = [4]u8;
 pub const Router = struct {
     const CallbackType = fn (*DeserializerTagged, RouteId, *p2p.Message) void;
 
-    socket: *p2p.Socket,
+    router_socket: *p2p.Socket,
+    dealer_socket: *p2p.Socket,
     callback_map: std.AutoHashMap(i64, CallbackType),
     allocator: *std.mem.Allocator,
 
@@ -17,13 +18,18 @@ pub const Router = struct {
         var router = try allocator.create(Router);
 
         var router_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
+        var dealer_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_DEALER);
+
         router.* = Router{
-            .socket = router_socket,
+            .router_socket = router_socket,
+            .dealer_socket = dealer_socket,
             .callback_map = std.AutoHashMap(i64, CallbackType).init(allocator),
             .allocator = allocator,
         };
-        try router.socket.bind(bind_point);
+        try router.router_socket.bind(bind_point);
+        try router.dealer_socket.bind("ipc:///tmp/dealer");
 
+        try p2p.proxy(router.router_socket, router.dealer_socket);
         return router;
     }
 
@@ -47,30 +53,33 @@ pub const Router = struct {
         std.debug.warn("start router\n", .{});
         //receive a message
         while (true) {
-            std.debug.warn("router recv: sock{}\n", .{self.socket});
-
-            var msg_id = self.socket.recv() catch break;
+            var msg_id = self.dealer_socket.recv() catch {
+                std.debug.warn("sleeping\n", .{});
+                std.time.sleep(100000000);
+                continue;
+            };
+            std.debug.warn("router recv: sock{}\n", .{self.dealer_socket});
             defer msg_id.deinit();
-
-            std.debug.warn("router got msg\n", .{});
 
             var id_buffer = msg_id.get_buffer() catch break;
             defer id_buffer.deinit();
 
             var id: RouteId = id_buffer.span()[0..4].*;
 
+            std.debug.warn("router got msg from id: {x}\n", .{id});
+
             if (!msg_id.more()) {
                 break;
             }
 
             //delimiter
-            var msg_delim = self.socket.recv() catch break;
+            var msg_delim = self.dealer_socket.recv() catch break;
             defer msg_delim.deinit();
             if (!msg_delim.more()) {
                 break;
             }
 
-            var msg_payload = self.socket.recv() catch break; //actual package
+            var msg_payload = self.dealer_socket.recv() catch break; //actual package
             defer msg_payload.deinit();
 
             // setup deserializer for package
@@ -86,9 +95,9 @@ pub const Router = struct {
                 std.debug.warn("False tag: {}\n", .{tag});
                 // reply that this tag is unknown
 
-                self.socket.send_more(&msg_id) catch break;
-                self.socket.send_more(&msg_delim) catch break;
-                self.socket.send(&msg_delim) catch break; //send empty payload
+                self.dealer_socket.send_more(&msg_id) catch break;
+                self.dealer_socket.send_more(&msg_delim) catch break;
+                self.dealer_socket.send(&msg_delim) catch break; //send empty payload
 
                 continue;
             }

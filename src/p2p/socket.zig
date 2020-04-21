@@ -8,7 +8,6 @@ const mem = std.mem;
 const Allocator = mem.Allocator;
 const default_allocator = p2p.default_allocator;
 
-
 const c = p2p.c;
 
 var prng = std.rand.DefaultPrng.init(42);
@@ -69,6 +68,14 @@ pub const Socket = struct {
         return message;
     }
 
+    pub fn recv_noblock(self: *Socket) !Message {
+        var message = try Message.init();
+        errdefer message.deinit();
+        var rc = c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, message.msg), self.socket.?, c.ZMQ_DONTWAIT);
+        if (rc == -1)
+            return error.NoMessage;
+        return message;
+    }
 };
 
 pub fn start_proxy(frontend: *Socket, backend: *Socket) void {

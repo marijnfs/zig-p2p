@@ -75,8 +75,10 @@ pub fn send_chat_callback(message_data: *SendMessageData) void {
 
     var rc = message_data.socket.send(&msg);
 
+    warn("receiving\n", .{});
     var rcv_msg = message_data.socket.recv() catch return;
     defer rcv_msg.deinit();
+    warn("got\n", .{});
 
     var buf = rcv_msg.get_buffer() catch return;
     warn("Sent chat, got {}\n", .{buf.span()});
@@ -86,15 +88,15 @@ pub fn router_reply_callback(id_message: *RouterIdMessage) void {
     warn("Router reply to {x} :{}\n", .{ id_message.id, id_message.buffer.span() });
     var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
     defer id_msg.deinit();
-    var rc = chat.router.?.socket.send_more(&id_msg);
+    var rc = chat.router.?.dealer_socket.send_more(&id_msg);
 
     var delim_msg = Message.init() catch unreachable;
     defer delim_msg.deinit();
-    rc = chat.router.?.socket.send_more(&delim_msg);
+    rc = chat.router.?.dealer_socket.send_more(&delim_msg);
 
     var payload_msg = Message.init_slice(id_message.buffer.span()) catch unreachable;
     defer payload_msg.deinit();
-    rc = chat.router.?.socket.send(&payload_msg);
+    rc = chat.router.?.dealer_socket.send(&payload_msg);
 }
 
 pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
