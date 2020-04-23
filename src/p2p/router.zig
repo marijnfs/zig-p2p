@@ -22,12 +22,15 @@ pub const RouterIdMessage = struct {
 pub const Router = struct {
     const CallbackType = fn (*DeserializerTagged, RouteId, *p2p.Message) void;
 
-    const dealer_bind_point = "ipc:///tmp/dealer";
-    const pull_bind_point = "ipc:///tmp/pull";
+    //const dealer_bind_point = "ipc:///tmp/dealer";
+    //const pull_bind_point = "ipc:///tmp/pull";
 
     router_socket: *p2p.Socket,
     dealer_socket: *p2p.Socket,
 
+    router_bind_point: Buffer,
+    dealer_bind_point: Buffer,
+    pull_bind_point: Buffer,
     reply_queue: p2p.AtomicQueue(RouterIdMessage),
 
     callback_map: std.AutoHashMap(i64, CallbackType),
@@ -46,12 +49,14 @@ pub const Router = struct {
         router.* = Router{
             .router_socket = router_socket,
             .dealer_socket = dealer_socket,
+            .router_bind_point = try Buffer.init(allocator, bind_point),
+            .dealer_bind_point = try Buffer.init(allocator, try std.fmt.allocPrint(allocator, "{}{}", .{ bind_point, "_dealer" })),
+            .pull_bind_point = try Buffer.init(allocator, try std.fmt.allocPrint(allocator, "{}{}", .{ bind_point, "_pull" })),
+
             .reply_queue = p2p.AtomicQueue(RouterIdMessage).init(allocator),
             .callback_map = std.AutoHashMap(i64, CallbackType).init(allocator),
             .allocator = allocator,
         };
-        try router.router_socket.bind(bind_point);
-        try router.dealer_socket.bind(dealer_bind_point);
 
         return router;
     }
@@ -75,9 +80,15 @@ pub const Router = struct {
     pub fn router_processor(self: *Router) void {
         std.debug.warn("start router\n", .{});
         //receive a message
+        self.router_socket.bind(self.router_bind_point.span()) catch unreachable;
+        self.dealer_socket.bind(self.dealer_bind_point.span()) catch unreachable;
 
+        //start proxy between router and dealer
+        p2p.proxy(self.router_socket, self.dealer_socket) catch unreachable;
+
+        //Setup internal passthrough socket from writer to here
         var read_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PULL) catch unreachable;
-        read_socket.bind(pull_bind_point) catch unreachable;
+        read_socket.bind(self.pull_bind_point.span()) catch unreachable;
 
         var poll_items: [2]c.zmq_pollitem_t = undefined;
         poll_items[0].socket = self.dealer_socket.socket;
@@ -161,7 +172,7 @@ pub const Router = struct {
         std.debug.warn("start router writer\n", .{});
 
         var write_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PUSH) catch unreachable;
-        write_socket.connect(pull_bind_point) catch unreachable;
+        write_socket.connect(self.pull_bind_point.span()) catch unreachable;
 
         //nonsence message
         var bla_message = Message.init() catch unreachable;
@@ -193,9 +204,6 @@ pub const Router = struct {
     }
 
     fn start(self: *Router) !void {
-        //start proxy between router and dealer
-        try p2p.proxy(self.router_socket, self.dealer_socket);
-
         //start the reader and writer
         _ = try p2p.thread_pool.add_thread(self, Router.router_processor);
         _ = try p2p.thread_pool.add_thread(self, Router.router_writer);
