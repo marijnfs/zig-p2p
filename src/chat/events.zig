@@ -1,6 +1,7 @@
 const std = @import("std");
 const chat = @import("chat.zig");
 const p2p = chat.p2p;
+const RouterIdMessage = p2p.router.RouterIdMessage;
 
 const make_event = p2p.event.make_event;
 const pool = p2p.pool;
@@ -30,16 +31,6 @@ pub const Events = .{
     .SayHello = make_event(SendMessageData, say_hello_callback),
     .SendChat = make_event(SendMessageData, send_chat_callback),
     // .CheckConnectionWorkItem = make_work_item(work.DummyWorkData, check_connection_callback),
-};
-
-// Data Structs
-pub const RouterIdMessage = struct {
-    id: p2p.router.RouteId,
-    buffer: Buffer,
-
-    fn deinit(self: *RouterIdMessage) void {
-        self.buffer.deinit();
-    }
 };
 
 const SendMessageData = struct {
@@ -86,17 +77,7 @@ pub fn send_chat_callback(message_data: *SendMessageData) void {
 
 pub fn router_reply_callback(id_message: *RouterIdMessage) void {
     warn("Router reply to {x} :{}\n", .{ id_message.id, id_message.buffer.span() });
-    var id_msg = Message.init_slice(id_message.id[0..]) catch unreachable;
-    defer id_msg.deinit();
-    var rc = chat.router.?.dealer_socket.send_more(&id_msg);
-
-    var delim_msg = Message.init() catch unreachable;
-    defer delim_msg.deinit();
-    rc = chat.router.?.dealer_socket.send_more(&delim_msg);
-
-    var payload_msg = Message.init_slice(id_message.buffer.span()) catch unreachable;
-    defer payload_msg.deinit();
-    rc = chat.router.?.dealer_socket.send(&payload_msg);
+    chat.router.?.queue_message(id_message.*) catch unreachable;
 }
 
 pub fn input_message_callback(chat_message: *chat.ChatMessage) void {

@@ -12,7 +12,7 @@ pub fn incoming_chat_callback(chat_message: chat.ChatMessage, id: p2p.router.Rou
     std.debug.warn("got chat: {}\n", .{chat_message});
 
     var thanks = std.mem.dupe(default_allocator, u8, "got message") catch return;
-    var router_event = RouterReply.init(default_allocator, chat.events.RouterIdMessage{
+    var router_event = RouterReply.init(default_allocator, p2p.router.RouterIdMessage{
         .id = id,
         .buffer = Buffer.fromOwnedSlice(default_allocator, thanks) catch return,
     }) catch return;

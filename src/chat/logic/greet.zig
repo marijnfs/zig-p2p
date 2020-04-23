@@ -17,7 +17,7 @@ pub fn greet_callback(val: void, id: p2p.router.RouteId, id_msg: *p2p.Message) v
     var ip_buffer = cm.ip4_to_zeromq(ip, 4040) catch unreachable;
 
     var thanks = std.mem.dupe(default_allocator, u8, "thanks") catch return;
-    var router_event = RouterReply.init(default_allocator, chat.events.RouterIdMessage{
+    var router_event = RouterReply.init(default_allocator, p2p.router.RouterIdMessage{
         .id = id,
         .buffer = Buffer.fromOwnedSlice(default_allocator, thanks) catch return,
     }) catch return;

@@ -53,7 +53,7 @@ pub const EventQueue = struct {
         while (true) {
             if (event_queue.queue.empty()) {
                 std.time.sleep(100000000);
-                std.debug.warn("event {}\n", .{@ptrToInt(event_queue)});
+                // std.debug.warn("event {}\n", .{@ptrToInt(event_queue)});
                 continue;
             }
 
