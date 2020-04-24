@@ -41,5 +41,6 @@ pub fn build(b: *Builder) void {
     const exe_chat = build_exe(b, "relaychat");
     const exe_send_test = build_exe(b, "send_test");
     const exe_router_test = build_exe(b, "router_test");
+    const exe_minitest = build_exe(b, "minitest");
 
 }
