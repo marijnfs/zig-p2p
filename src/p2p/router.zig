@@ -43,12 +43,9 @@ pub const Router = struct {
     pub fn init(allocator: *std.mem.Allocator, bind_point: [:0]u8) !*Router {
         var router = try allocator.create(Router);
 
-        var router_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
-        var dealer_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_DEALER);
-
         router.* = Router{
-            .router_socket = router_socket,
-            .dealer_socket = dealer_socket,
+            .router_socket = undefined,
+            .dealer_socket = undefined,
             .router_bind_point = try Buffer.init(allocator, bind_point),
             .dealer_bind_point = try Buffer.init(allocator, try std.fmt.allocPrint(allocator, "{}{}", .{ bind_point, "_dealer" })),
             .pull_bind_point = try Buffer.init(allocator, try std.fmt.allocPrint(allocator, "{}{}", .{ bind_point, "_pull" })),
@@ -79,7 +76,12 @@ pub const Router = struct {
 
     pub fn router_processor(self: *Router) void {
         std.debug.warn("start router\n", .{});
-        //receive a message
+
+        //create sockets
+        self.router_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER) catch unreachable;
+        self.dealer_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_DEALER) catch unreachable;
+
+        //Bind socket
         self.router_socket.bind(self.router_bind_point.span()) catch unreachable;
         self.dealer_socket.bind(self.dealer_bind_point.span()) catch unreachable;
 

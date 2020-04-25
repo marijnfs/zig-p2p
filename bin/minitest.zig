@@ -23,6 +23,8 @@ const warn = std.debug.warn;
 const default_allocator = std.heap.page_allocator;
 const c = p2p.c;
 
+var event_queue: p2p.EventQueue;
+
 pub fn init() !void {
     p2p.init();
     chat.init();
@@ -31,7 +33,7 @@ pub fn init() !void {
 pub fn reader(context: void) !void {
     var pull_sock = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PULL);
     var router_sock = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
-    
+
     try pull_sock.bind("ipc:///tmp/pull");
     try router_sock.bind("ipc:///tmp/router");
 
@@ -78,13 +80,15 @@ pub fn requester(context: void) !void {
     try req_sock.connect("ipc:///tmp/router");
 
     while (true) {
+        warn("read socket\n", .{});
+        var blanc = try Message.init();
+        try req_sock.send(&blanc);
         var msg = try req_sock.recv();
         try req_sock.send(&msg);
 
         std.time.sleep(100000000);
     }
 }
-
 
 pub fn reader_void(context: void) void {
     reader(context) catch unreachable;
