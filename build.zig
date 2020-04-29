@@ -19,13 +19,11 @@ fn build_exe(b: *Builder, name: []const u8) !*std.build.LibExeObjStep {
     exe.addCSourceFile("ext/monocypher-2.0.5/src/monocypher.c", cflags);
     exe.addIncludeDir("ext/monocypher-2.0.5/src");
     exe.addLibPath("/usr/lib64");
-    exe.addLibPath("/usr/lib64/gcc/x86_64-suse-linux/7");
     exe.linkSystemLibrary("zmq");
 
     exe.addPackagePath("chat", "src/chat/chat.zig");
     exe.addPackagePath("p2p", "src/p2p/p2p.zig");
     exe.linkLibC();
-    exe.linkSystemLibrary("stdc++");
 
     exe.setBuildMode(mode);
     exe.install();
