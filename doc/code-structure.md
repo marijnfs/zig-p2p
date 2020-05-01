@@ -15,6 +15,25 @@ connection_management.zig
 		+ event_queue
 		+ socket
 		+ active
+router.zig
+	RouteId [4]u8
+	RouteIdMessage
+		+ id RouteId
+		+ buffer
+		- deinit
+	Router
+		+ socket
+		+ reply_queue(RouterIdMessage)
+		+ bind_point
+		+ pull_bind_point
+		+ callback
+		+ allocator
+		- init/deinit
+		- add_route(tag, context, func)
+		- queue_message
+		- start_writer #reply queue to router
+		- start_router #router to callback
+		- start
 socket.zig
 	Socket
 	+ socket_type
@@ -53,26 +72,6 @@ serializer.zig
 serialize_allocate.zig
 	#used by serializer.zig
 	#could go to core
-router.zig
-	RouteId [4]u8
-	RouteIdMessage
-		+ id RouteId
-		+ buffer
-		- deinit
-	Router
-		+ socket
-		+ reply_queue(RouterIdMessage)
-		+ bind_point
-		+ pull_bind_point
-		+ callback
-		+ allocator
-		- init/deinit
-		- add_route(tag, context, func)
-		- queue_message
-		- start_writer #reply queue to router
-		- start_router #router to callback
-		
-		
 hash.zig
 	+ Hash [32]u8
 	- hash #create hash, calls blake_hash
@@ -107,3 +106,6 @@ thread_pool.zig
 	- join #join all thread, call at end
 pool.zig
 	#todo
+	-init
+	-put
+	
