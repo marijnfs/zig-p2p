@@ -14,8 +14,7 @@ pub fn hash(v: var) !Hash {
     return H;
 }
 
-pub fn blake_hash_allocate(data: []u8, allocator: *mem.Allocator) ![]u8 {
-    const key_size = 32;
+pub fn blake_hash_allocate(data: []u8, allocator: *mem.Allocator, key_size: u64) ![]u8 {
     var hash = try allocator.alloc(u8, key_size);
 
     c.crypto_blake2b_general(hash.ptr, hash.len, null, 0, data.ptr, data.len);

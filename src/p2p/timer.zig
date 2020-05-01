@@ -19,6 +19,10 @@ const Timer = struct {
 		}
 	}
 
+	fn deinit(self: *Timer) void {
+		alarm.deinit();
+	}
+
 	fn add_timer(self: *Timer, duration: u64, callback: fn () void) {
 		self.alarms.append(Alarm{.duration = duration, .t = time.timestamp() + duration, .callback = callback});
 	}

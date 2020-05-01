@@ -87,7 +87,7 @@ pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
     defer held.release();
 
     for (cm.outgoing_connections.items) |con| {
-        warn("adding announce chat\n", .{});
+        warn("adding announce chat to connection {}\n", .{con.connect_point.span()});
         var chat_buffer = messages.AnnounceChat(chat_message) catch continue;
         var chat_event = Events.SendChat.init(default_allocator, .{ .socket = con.socket, .buffer = chat_buffer }) catch unreachable;
 
@@ -119,17 +119,18 @@ pub fn relay_callback(chat: *Chat) void {
 const AddConnectionData = Buffer;
 
 fn add_connection_callback(connection_point: *AddConnectionData) void {
+    warn("creating connection to {}\n", .{connection_point.span()});
     var outgoing_connection = cm.OutgoingConnection.init(connection_point.span()) catch return;
 
-    outgoing_connection.start_event_loop();
-
     //Say hello
-    // var hello_msg = messages.Hello() catch return;
-    // var event = Events.SayHello.init(default_allocator, .{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
+    var hello_msg = messages.Hello() catch return;
+    var event = Events.SayHello.init(default_allocator, .{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
 
-    // outgoing_connection.queue_event(event) catch unreachable;
+    outgoing_connection.queue_event(event) catch unreachable;
 
     //add connection and start thread
+    outgoing_connection.start_event_loop();
+
     cm.outgoing_connections.append(outgoing_connection) catch unreachable;
 }
 

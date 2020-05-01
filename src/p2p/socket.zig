@@ -77,7 +77,3 @@ pub const Socket = struct {
         return message;
     }
 };
-
-pub fn start_proxy(frontend: *Socket, backend: *Socket) void {
-    c.zmq_proxy(frontend.socket, backend.socket, 0);
-}
