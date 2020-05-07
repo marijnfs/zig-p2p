@@ -114,55 +114,50 @@ pub const Router = struct {
             var rc = c.zmq_poll(&poll_items, poll_items.len, 1000);
             if (rc == -1) {
                 std.debug.warn("polling fail\n", .{});
-                break;
+                return error.PollFail;
             }
 
             if (poll_items[0].revents != 0) { // Pull socket, meaning a reply to the router
-                std.debug.warn("got event 0\n", .{});
+                std.debug.warn("got Pull socket\n", .{});
                 var msg_id = try read_socket.recv();
-                try self.socket.send(&msg_id);
-
-                var msg_delim = try read_socket.recv();
-                try self.socket.send(&msg_delim);
+                defer msg_id.deinit();
+                try self.socket.send_more(&msg_id);
 
                 var msg_payload = try read_socket.recv();
+                defer msg_payload.deinit();
                 try self.socket.send(&msg_payload);
             }
 
             if (poll_items[1].revents != 0) { // Router socket
-                std.debug.warn("got event 1\n", .{});
-                var msg_id = self.socket.recv() catch return;
+                std.debug.warn("got Router socket\n", .{});
+                var msg_id = try self.socket.recv();
                 defer msg_id.deinit();
-
-                var id_buffer = msg_id.get_buffer() catch break;
+                var id_buffer = try msg_id.get_buffer();
                 defer id_buffer.deinit();
+                warn("msgid: {x}\n", .{id_buffer.span()});
 
                 var id: RouteId = id_buffer.span()[0..4].*;
 
                 std.debug.warn("router got msg from id: {x}\n", .{id});
 
                 if (!msg_id.more()) {
-                    break;
+                    return error.ValidationError;
                 }
 
-                //delimiter
-                var msg_delim = self.socket.recv() catch break;
-                defer msg_delim.deinit();
-                if (!msg_delim.more()) {
-                    break;
-                }
 
-                var msg_payload = self.socket.recv() catch break; //actual package
+                warn("recving payload\n", .{});
+                var msg_payload = try self.socket.recv(); //actual package
                 defer msg_payload.deinit();
 
                 // setup deserializer for package
-                var buffer = msg_payload.get_buffer() catch break;
+                var buffer = try msg_payload.get_buffer();
                 defer buffer.deinit();
+                warn("router got payload from id: {x}\n", .{buffer.span()});
 
                 var deserializer = p2p.deserialize_tagged(buffer.span(), default_allocator);
                 defer deserializer.deinit();
 
-                var tag = deserializer.tag() catch break;
+                var tag = try deserializer.tag();
                 var callback_kv = self.callback_map.get(tag);
                 if (callback_kv != null) {
                     callback_kv.?.value(&deserializer, id, &msg_id);
@@ -172,10 +167,10 @@ pub const Router = struct {
 
                     var reply_message = RouterIdMessage{
                         .id = id,
-                        .buffer = Buffer.initSize(self.allocator, 0) catch unreachable,
+                        .buffer = try Buffer.initSize(self.allocator, 0),
                     };
 
-                    self.queue_message(reply_message) catch unreachable;
+                    try self.queue_message(reply_message);
 
                     continue;
                 }
@@ -210,11 +205,7 @@ pub const Router = struct {
             var id_message = try Message.init_slice(reply.id[0..]);
             defer id_message.deinit();
             try write_socket.send_more(&id_message);
-
-            var delim_message = try Message.init();
-            defer delim_message.deinit();
-            try write_socket.send_more(&delim_message);
-
+            
             var payload_message = try Message.init_slice(reply.buffer.span());
             defer payload_message.deinit();
             try write_socket.send(&payload_message);

@@ -1,5 +1,6 @@
 const std = @import("std");
 const p2p = @import("p2p.zig");
+const warn = std.debug.warn;
 
 const Message = @import("message.zig").Message;
 
@@ -33,7 +34,7 @@ pub const Socket = struct {
     }
 
     pub fn connect(self: *Socket, endpoint: [:0]const u8) !void {
-        std.debug.warn("connecting to: {}\n", .{endpoint});
+        warn("connecting to: {}\n", .{endpoint});
 
         const rc = c.zmq_connect(self.socket, endpoint);
 
@@ -42,25 +43,28 @@ pub const Socket = struct {
     }
 
     pub fn bind(self: *Socket, endpoint: [:0]const u8) !void {
-        std.debug.warn("binding to: {}\n", .{endpoint});
+        warn("binding to: {}\n", .{endpoint});
         const rc = c.zmq_bind(self.socket, endpoint);
         if (rc == -1)
             return error.ConnectionFailed;
     }
 
     pub fn send(self: *Socket, message: *Message) !void {
+        warn("sending over {x}\n", .{self.socket});
         const rc = c.zmq_msg_send(@ptrCast([*c]c.struct_zmq_msg_t, message.msg), self.socket.?, 0);
         if (rc == -1)
             return error.ConnectionFailed;
     }
 
     pub fn send_more(self: *Socket, message: *Message) !void {
+        warn("send_more over {x}\n", .{self.socket});
         const rc = c.zmq_msg_send(@ptrCast([*c]c.struct_zmq_msg_t, message.msg), self.socket.?, c.ZMQ_SNDMORE);
         if (rc == -1)
             return error.ConnectionFailed;
     }
 
     pub fn recv(self: *Socket) !Message {
+        warn("recv over {x}\n", .{self.socket});
         var message = try Message.init();
         var rc = c.zmq_msg_recv(@ptrCast([*c]c.struct_zmq_msg_t, message.msg), self.socket.?, 0);
         if (rc == -1)

@@ -33,7 +33,7 @@ pub const OutgoingConnection = struct {
     pub fn init(connect_point: [:0]const u8) !*OutgoingConnection {
         var con = try default_allocator.create(Self);
         con.* = OutgoingConnection{
-            .socket = try Socket.init(context, c.ZMQ_REQ),
+            .socket = try Socket.init(context, c.ZMQ_DEALER),
             .event_queue = p2p.event.EventQueue.init(default_allocator),
             .connect_point = try Buffer.init(default_allocator, connect_point),
             .active = true,

@@ -50,13 +50,13 @@ pub fn say_hello_callback(message_data: *SendMessageData) void {
     warn("sending msg, sock: {}\n", .{message_data.socket});
     var rc = message_data.socket.send(&msg);
 
-    warn("rcv msg\n", .{});
-    var rcv_msg = message_data.socket.recv() catch return;
-    defer rcv_msg.deinit();
+    // warn("rcv msg\n", .{});
+    // var rcv_msg = message_data.socket.recv() catch return;
+    // defer rcv_msg.deinit();
 
-    warn("getting buffer\n", .{});
-    var buf = rcv_msg.get_buffer() catch return;
-    warn("Said hello, got {}\n", .{buf.span()});
+    // warn("getting buffer\n", .{});
+    // var buf = rcv_msg.get_buffer() catch return;
+    // warn("Said hello, got {}\n", .{buf.span()});
 }
 
 pub fn send_chat_callback(message_data: *SendMessageData) void {
