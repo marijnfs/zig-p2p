@@ -1,6 +1,6 @@
-c.zig #c codes
-p2p.zig #master
-connection_management.zig
+# c.zig #c codes
+# p2p.zig #master
+# connection_management.zig
 	+ outgoing_connections
 	+ known_addresses
 	+ muxtex
@@ -15,7 +15,7 @@ connection_management.zig
 		+ event_queue
 		+ socket
 		+ active
-router.zig
+#router.zig
 	RouteId [4]u8
 	RouteIdMessage
 		+ id RouteId
@@ -34,7 +34,7 @@ router.zig
 		- start_writer #reply queue to router
 		- start_router #router to callback
 		- start
-socket.zig
+#socket.zig
 	Socket
 	+ socket_type
 	+ socket #zig ptr
@@ -46,7 +46,15 @@ socket.zig
 	- send_more
 	- recv
 	- recv_noblock
-event.zig
+#message.zig
+	Message
+		- init #init empty
+		- init_slice #init from slice, makes copy
+		- deinit
+		- more #has more?
+		- get_peer_ip4 #get source ipv4
+		- get_buffer #get buffer from message data
+#event.zig
 	Event
 		# interface to events
 		- process()
@@ -60,7 +68,7 @@ event.zig
 		- start_event_loop
 		- join
 	make_event(type, func) #event struct builder
-serializer.zig
+#serializer.zig
 	- serialize #return buffer
 	- deserialize
 	- serialize_tagged
@@ -69,42 +77,34 @@ serializer.zig
 		- init / deinit
 		- tag #get tag
 		- deserialize
-serialize_allocate.zig
+#serialize_allocate.zig
 	#used by serializer.zig
 	#could go to core
-hash.zig
+#hash.zig
 	+ Hash [32]u8
 	- hash #create hash, calls blake_hash
 	- blake_hash_allocate #variable size
 	- blake_hash #heap
-message.zig
-	Message
-		- init #init empty
-		- init_slice #init from slice, makes copy
-		- deinit
-		- more #has more?
-		- get_peer_ip4 #get source ipv4
-		- get_buffer #get buffer from message data
-proxy.zig
+#proxy.zig
 	- proxy #call proxy on frontend / backend
-queue.zig
+#queue.zig
 	AtomicQueue(T)
 		- push
 		- pop
 		- empty
 		- size
 		- size
-timer.zig
+#timer.zig
 	Timer
 		- init/deinit
 		- add_timer
 		- start
-thread_pool.zig
+#thread_pool.zig
 	+ thread_pool
 	+ mutex
 	- add_thread
 	- join #join all thread, call at end
-pool.zig
+#pool.zig
 	#todo
 	-init
 	-put

@@ -179,7 +179,6 @@ pub const Router = struct {
 
                     continue;
                 }
-                
             }
             std.debug.warn("next poll\n", .{});
         }
@@ -191,6 +190,7 @@ pub const Router = struct {
         self.router_writer() catch unreachable;
     }
 
+    // this writer checks the write queue, and sends it properly over the router socket
     fn router_writer(self: *Router) !void {
         std.debug.warn("start router writer\n", .{});
 
