@@ -87,14 +87,6 @@ pub const Router = struct {
         self.socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
         try self.socket.bind(self.bind_point.span());
 
-        // self.dealer_socket = p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_DEALER) catch unreachable;
-
-        //Bind socket
-        // self.dealer_socket.bind(self.dealer_bind_point.span()) catch unreachable;
-
-        //start proxy between router and dealer
-        // p2p.proxy(self.socket, self.dealer_socket) catch unreachable;
-
         //Setup internal passthrough socket from writer to here
         var read_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PULL);
         try read_socket.bind(self.pull_bind_point.span());
@@ -144,7 +136,6 @@ pub const Router = struct {
                     return error.ValidationError;
                 }
 
-
                 warn("recving payload\n", .{});
                 var msg_payload = try self.socket.recv(); //actual package
                 defer msg_payload.deinit();
@@ -154,6 +145,7 @@ pub const Router = struct {
                 defer buffer.deinit();
                 warn("router got payload from id: {x}\n", .{buffer.span()});
 
+                //Deserialize the payload
                 var deserializer = p2p.deserialize_tagged(buffer.span(), default_allocator);
                 defer deserializer.deinit();
 
@@ -185,7 +177,7 @@ pub const Router = struct {
         self.router_writer() catch unreachable;
     }
 
-    // this writer checks the write queue, and sends it properly over the router socket
+    // this writer checks the write queue, and sends it properly over to the PULL socket
     fn router_writer(self: *Router) !void {
         std.debug.warn("start router writer\n", .{});
 
@@ -205,7 +197,7 @@ pub const Router = struct {
             var id_message = try Message.init_slice(reply.id[0..]);
             defer id_message.deinit();
             try write_socket.send_more(&id_message);
-            
+
             var payload_message = try Message.init_slice(reply.buffer.span());
             defer payload_message.deinit();
             try write_socket.send(&payload_message);

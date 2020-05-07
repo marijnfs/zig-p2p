@@ -13,8 +13,9 @@ const Buffer = std.ArrayListSentineled(u8, 0);
 
 pub var context: ?*c_void = undefined; //zmq context
 pub var outgoing_connections: std.ArrayList(*OutgoingConnection) = undefined;
-pub var known_addresses: std.ArrayList(Buffer) = undefined;
 pub var mutex: std.Mutex = undefined;
+
+pub var known_addresses: std.ArrayList(Buffer) = undefined;
 
 const c = p2p.c;
 

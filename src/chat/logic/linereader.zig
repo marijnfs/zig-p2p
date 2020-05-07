@@ -19,7 +19,7 @@ pub fn line_reader(username: [:0]const u8) void {
 
         std.debug.warn("buf: {} {}\n", .{ buffer.span(), buffer.items.len });
         var chat_message = chat.ChatMessage.init(username, buffer.span(), 0) catch break;
-        var chat_event = chat.Events.InputMessage.init(default_allocator, chat_message) catch break;
+        var chat_event = chat.Events.CheckMessage.init(default_allocator, chat_message) catch break;
         chat.main_event_queue.queue_event(chat_event) catch break;
     }
 }

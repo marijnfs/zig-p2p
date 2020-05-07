@@ -1,3 +1,5 @@
+const std = @import("std");
+
 const chat_message = @import("chat_message.zig");
 const process_functions = @import("process_functions.zig");
 pub const events = @import("events.zig");
@@ -11,18 +13,17 @@ pub const main_event_queue = &event_queues.main_event_queue;
 
 pub const line_reader = @import("logic/linereader.zig").line_reader;
 
-
 pub const callbacks = .{
     .greet = @import("logic/greet.zig").greet_callback,
     .incoming_chat = @import("logic/incoming_chat.zig").incoming_chat_callback,
 };
 
-
 pub const p2p = @import("../p2p/p2p.zig");
 
 pub fn init() void {
     event_queues.init();
+    sent_map = std.AutoHashMap([32]u8, bool).init(p2p.default_allocator);
 }
 
-
 pub var router: ?*p2p.Router = null;
+pub var sent_map: std.AutoHashMap([32]u8, bool) = undefined;

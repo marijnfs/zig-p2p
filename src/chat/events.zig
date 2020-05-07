@@ -26,7 +26,7 @@ pub const Events = .{
     // .RelayWorkItem = make_event(chat.ChatMessage, relay_callback),
     .AddConnection = make_event(AddConnectionData, add_connection_callback),
     .AddKnownAddress = make_event(AddKnownAddressData, add_known_address_callback),
-    .InputMessage = make_event(chat.ChatMessage, input_message_callback),
+    .CheckMessage = make_event(chat.ChatMessage, check_message_callback),
 
     .SayHello = make_event(SendMessageData, say_hello_callback),
     .SendChat = make_event(SendMessageData, send_chat_callback),
@@ -43,20 +43,11 @@ const SendMessageData = struct {
 };
 
 pub fn say_hello_callback(message_data: *SendMessageData) void {
-    warn("sending hello\n", .{});
     var msg = Message.init_slice(message_data.buffer.span()) catch return;
     defer msg.deinit();
 
     warn("sending msg, sock: {}\n", .{message_data.socket});
     var rc = message_data.socket.send(&msg);
-
-    // warn("rcv msg\n", .{});
-    // var rcv_msg = message_data.socket.recv() catch return;
-    // defer rcv_msg.deinit();
-
-    // warn("getting buffer\n", .{});
-    // var buf = rcv_msg.get_buffer() catch return;
-    // warn("Said hello, got {}\n", .{buf.span()});
 }
 
 pub fn send_chat_callback(message_data: *SendMessageData) void {
@@ -65,14 +56,6 @@ pub fn send_chat_callback(message_data: *SendMessageData) void {
     defer msg.deinit();
 
     var rc = message_data.socket.send(&msg);
-
-    warn("receiving\n", .{});
-    var rcv_msg = message_data.socket.recv() catch return;
-    defer rcv_msg.deinit();
-    warn("got\n", .{});
-
-    var buf = rcv_msg.get_buffer() catch return;
-    warn("Sent chat, got {}\n", .{buf.span()});
 }
 
 pub fn router_reply_callback(id_message: *RouterIdMessage) void {
@@ -80,11 +63,17 @@ pub fn router_reply_callback(id_message: *RouterIdMessage) void {
     chat.router.?.queue_message(id_message.*) catch unreachable;
 }
 
-pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
-    warn("Input Message: {}\n", .{chat_message});
-
+pub fn check_message_callback(chat_message: *chat.ChatMessage) void {
     const held = cm.mutex.acquire();
     defer held.release();
+
+    var H = p2p.hash(chat_message.*) catch unreachable;
+    var optional_kv = chat.sent_map.put(H, true) catch unreachable;
+    if (optional_kv) |kv| {
+        return;
+    }
+
+    warn("Chat [{}] {}\n", .{ chat_message.user, chat_message.message });
 
     for (cm.outgoing_connections.items) |con| {
         warn("adding announce chat to connection {}\n", .{con.connect_point.span()});
@@ -92,27 +81,6 @@ pub fn input_message_callback(chat_message: *chat.ChatMessage) void {
         var chat_event = Events.SendChat.init(default_allocator, .{ .socket = con.socket, .buffer = chat_buffer }) catch unreachable;
 
         con.queue_event(chat_event) catch continue;
-    }
-}
-
-pub fn send_callback(chat_message: *chat.ChatMessage) void {
-    var buffer = p2p.serialize_tagged(1, chat_message) catch unreachable;
-    defer buffer.deinit();
-
-    var i: usize = 0;
-    while (i < cm.outgoing_connections.items.len) : (i += 1) {
-        var msg = Message.init_slice(buffer.span()) catch unreachable;
-        cm.outgoing_connections.ptrAt(i).queue_message(msg) catch unreachable;
-    }
-}
-
-pub fn relay_callback(chat: *Chat) void {
-    var buffer = p2p.serialize_tagged(1, chat) catch unreachable;
-    defer buffer.deinit();
-
-    for (cm.outgoing_connections.span()) |*conn| {
-        var msg = Message.init_slice(buffer.span()) catch unreachable;
-        conn.queue_message(msg) catch unreachable;
     }
 }
 
@@ -185,9 +153,3 @@ pub fn expand_connection_callback(data: *void) void {
     }
     // outgoing_connections
 }
-
-const DataRequest = struct {
-    id: Buffer,
-};
-
-pub fn process_datarequest_callback(data: *DataRequest) void {}
