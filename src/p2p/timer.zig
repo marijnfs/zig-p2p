@@ -1,39 +1,57 @@
 const std = @import("std");
-const p2p = @import("p2p");
+const p2p = @import("p2p.zig");
 const default_allocator = p2p.default_allocator;
 
 const time = std.time;
 
 const Alarm = struct {
-	duration: u64,
-	t: u64,
-	callback: fn () void,
-;
+    duration: u64, t: u64, callback: fn () void
+};
 
-const Timer = struct {
-	alarms: std.ArrayList(Alarm),
+pub const Timer = struct {
+    alarms: std.ArrayList(Alarm),
+    mutex: std.Mutex,
 
-	fn init() Timer {
-		return .{
-			alarms = std.ArrayList(Alarm).init(default_allocator),
-		}
-	}
+    pub fn init() Timer {
+        return .{
+            .alarms = std.ArrayList(Alarm).init(default_allocator),
+            .mutex = std.Mutex.init(),
+        };
+    }
 
-	fn deinit(self: *Timer) void {
-		alarm.deinit();
-	}
+    pub fn deinit(self: *Timer) void {
+        alarm.deinit();
+    }
 
-	fn add_timer(self: *Timer, duration: u64, callback: fn () void) {
-		self.alarms.append(Alarm{.duration = duration, .t = time.timestamp() + duration, .callback = callback});
-	}
+    pub fn add_timer(self: *Timer, duration: u64, callback: fn () void) !void {
+        const lock = self.mutex.acquire();
+        defer lock.release();
+        try self.alarms.append(Alarm{ .duration = duration, .t = time.timestamp() + duration, .callback = callback });
+    }
 
-	fn process_timer(self: *Timer) void {
-		while (true) {
+    fn process_timer(self: *Timer) void {
+        var current = time.milliTimestamp();
+        for (self.alarms.span()) |*alarm| {
+            alarm.t = current + alarm.duration;
+        }
 
-		}
-	}
+        while (true) {
+            current = time.milliTimestamp();
+            const lock = self.mutex.acquire();
+            defer lock.release();
 
-	fn start_process_timer(self: *Timer) !void {
-		try p2p.thread_pool.add_thread(self, Timer.process_timer);
-	}
+            for (self.alarms.span()) |*alarm| {
+                if (alarm.t < current) {
+                    alarm.callback();
+                    current = time.milliTimestamp();
+                    alarm.t = current + alarm.duration;
+                }
+            }
+            std.time.sleep(10000000);
+        }
+    }
+
+    pub fn start(self: *Timer) !void {
+        _ = try p2p.thread_pool.add_thread(self, Timer.process_timer);
+    }
 };

@@ -37,7 +37,7 @@ pub const Router = struct {
     callback_map: std.AutoHashMap(i64, CallbackType),
     allocator: *std.mem.Allocator,
 
-    fn queue_message(self: *Router, message: RouterIdMessage) !void {
+    pub fn queue_message(self: *Router, message: RouterIdMessage) !void {
         try self.reply_queue.push(message);
     }
 
@@ -204,7 +204,7 @@ pub const Router = struct {
         }
     }
 
-    fn start(self: *Router) !void {
+    pub fn start(self: *Router) !void {
         //start the reader and writer
         _ = try p2p.thread_pool.add_thread(self, Router.router_processor_void);
         _ = try p2p.thread_pool.add_thread(self, Router.router_writer_void);

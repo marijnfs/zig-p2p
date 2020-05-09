@@ -134,7 +134,7 @@ pub fn expand_connection_callback(data: *void) void {
         var n: usize = 0;
         while (n < 1 and cm.outgoing_connections.items.len < K) : (n += 1) {
             var selection = PRNG.random.uintLessThan(usize, cm.known_addresses.items.len);
-            warn("selection: {}/{}\n", .{ selection, cm.known_addresses.items.len });
+
             var selected_address = cm.known_addresses.ptrAt(selection);
 
             var found: bool = false;

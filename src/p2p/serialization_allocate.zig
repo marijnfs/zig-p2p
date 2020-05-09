@@ -41,7 +41,7 @@ pub fn DeserializerAllocate(comptime endian: builtin.Endian, comptime packing: P
         }
 
         //@BUG: inferred error issue. See: #1386
-        fn deserializeInt(self: *Self, comptime T: type) (InStreamType.Error || error{EndOfStream})!T {
+        pub fn deserializeInt(self: *Self, comptime T: type) (InStreamType.Error || error{EndOfStream})!T {
             comptime assert(trait.is(.Int)(T) or trait.is(.Float)(T));
 
             const u8_bit_count = 8;
@@ -101,8 +101,7 @@ pub fn DeserializerAllocate(comptime endian: builtin.Endian, comptime packing: P
                 for (ptr.*) |*item|
                     try self.deserializeInto(item);
                 return;
-            }
-            else if (comptime trait.isIndexable(C)) {
+            } else if (comptime trait.isIndexable(C)) {
                 //It's a variable array, store the size first
                 const len = try self.deserializeInt(usize);
                 if (comptime meta.sentinel(C) == null) {
@@ -110,19 +109,17 @@ pub fn DeserializerAllocate(comptime endian: builtin.Endian, comptime packing: P
                 } else {
                     var buffer = try self.allocator.alloc(meta.Child(C), len + 1);
                     buffer[len] = meta.sentinel(C).?;
-                    ptr.* = buffer[0..len:0];
+                    ptr.* = buffer[0..len :0];
                 }
-                
+
                 for (ptr.*) |*item|
                     try self.deserializeInto(item);
                 return;
-            }
-            else if (comptime trait.is(.Pointer)(C)) {
+            } else if (comptime trait.is(.Pointer)(C)) {
                 ptr.* = try self.allocator.create(meta.Child(C));
                 try self.deserializeInto(ptr.*);
                 return;
             }
-
 
             //custom deserializer: fn(self: *Self, deserializer: var) !void
             if (comptime trait.hasFn("deserialize")(C)) return C.deserialize(ptr, self);
@@ -196,12 +193,7 @@ pub fn DeserializerAllocate(comptime endian: builtin.Endian, comptime packing: P
     };
 }
 
-pub fn deserializer_allocate(
-    comptime endian: builtin.Endian,
-    comptime packing: Packing,
-    in_stream: var,
-    allocator: *std.mem.Allocator
-) DeserializerAllocate(endian, packing, @TypeOf(in_stream)) {
+pub fn deserializer_allocate(comptime endian: builtin.Endian, comptime packing: Packing, in_stream: var, allocator: *std.mem.Allocator) DeserializerAllocate(endian, packing, @TypeOf(in_stream)) {
     return DeserializerAllocate(endian, packing, @TypeOf(in_stream)).init(in_stream, allocator);
 }
 
@@ -239,7 +231,7 @@ pub fn SerializerAllocate(comptime endian: builtin.Endian, comptime packing: Pac
             if (packing == .Bit) return self.out_stream.flushBits();
         }
 
-        fn serializeInt(self: *Self, value: var) Error!void {
+        pub fn serializeInt(self: *Self, value: var) Error!void {
             const T = @TypeOf(value);
             comptime assert(trait.is(.Int)(T) or trait.is(.Float)(T));
 
@@ -278,15 +270,13 @@ pub fn SerializerAllocate(comptime endian: builtin.Endian, comptime packing: Pac
                 for (value) |item|
                     try self.serialize(item);
                 return;
-            }
-            else if (comptime trait.isIndexable(T)) {
+            } else if (comptime trait.isIndexable(T)) {
                 //It's a variable array, store the size first
                 try self.serializeInt(value.len);
                 for (value) |item|
                     try self.serialize(item);
                 return;
-            }
-            else if (comptime trait.is(.Pointer)(T)) {
+            } else if (comptime trait.is(.Pointer)(T)) {
                 try self.serialize(value.*);
                 return;
             }
@@ -352,9 +342,7 @@ pub fn SerializerAllocate(comptime endian: builtin.Endian, comptime packing: Pac
                 .Enum => {
                     try self.serializeInt(@enumToInt(value));
                 },
-                else => {
-
-                },
+                else => {},
             }
         }
     };
@@ -609,20 +597,20 @@ fn testSerializerDeserializerArrayTypes(comptime endian: builtin.Endian, comptim
         const Self = @This();
     };
 
-    var my_array_types = ArrayTypes {
+    var my_array_types = ArrayTypes{
         .arrayType = [10]u8{ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 },
         .ptrArrayType = try allocator.alloc(u8, 5),
-        .arraySentinelType = [4:0]u8 {0, 1, 2, 3},
+        .arraySentinelType = [4:0]u8{ 0, 1, 2, 3 },
         .ptrArraySentinelType = (try allocator.alloc(u8, 5))[0..:0],
         .ptrType = try allocator.create(PackedStruct),
     };
     for (my_array_types.ptrArrayType) |*item, i| {
-        item.*= @intCast(u8, i);
+        item.* = @intCast(u8, i);
     }
     for (my_array_types.ptrArraySentinelType) |*item, i| {
-        item.*= @intCast(u8, i);
+        item.* = @intCast(u8, i);
     }
-    my_array_types.ptrType.* = PackedStruct{.f_i3 = 2, .f_u2 = 3};
+    my_array_types.ptrType.* = PackedStruct{ .f_i3 = 2, .f_u2 = 3 };
     defer my_array_types.deinit();
 
     var buffer = try std.Buffer.initSize(allocator, 0);
@@ -632,7 +620,6 @@ fn testSerializerDeserializerArrayTypes(comptime endian: builtin.Endian, comptim
     var serializer = std.io.serializer_allocate(endian, packing, stream);
     try serializer.serialize(my_array_types);
     try serializer.flush();
-
 
     var in_stream = std.io.fixedBufferStream(buffer.span()).inStream();
     var deserializer = std.io.deserializer_allocate(endian, packing, in_stream, allocator);

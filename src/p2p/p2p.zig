@@ -1,6 +1,5 @@
 pub const std = @import("std");
 
-
 pub const connection_management = @import("connection_management.zig");
 pub const thread_pool = @import("thread_pool.zig");
 
@@ -27,8 +26,9 @@ pub const blake_hash = @import("hash.zig").blake_hash;
 pub const blake_hash_allocate = @import("hash.zig").blake_hash_allocate;
 pub const Pool = @import("pool.zig").Pool;
 
-pub const Buffer = std.ArrayListSentineled(u8, 0);
+pub const timer = @import("timer.zig");
 
+pub const Buffer = std.ArrayListSentineled(u8, 0);
 
 pub const c = @import("c.zig").c;
 
