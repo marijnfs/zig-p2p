@@ -49,7 +49,7 @@ pub const Router = struct {
             // .dealer_socket = undefined,
             .bind_point = try Buffer.init(allocator, bind_point),
             // .dealer_bind_point = try Buffer.init(allocator, try std.fmt.allocPrint(allocator, "{}{}", .{ bind_point, "_dealer" })),
-            .pull_bind_point = try Buffer.init(allocator, try std.fmt.allocPrint(allocator, "{}{}", .{ bind_point, "_pull" })),
+            .pull_bind_point = try Buffer.init(allocator, "ipc:///tmp/pull"),
 
             .reply_queue = p2p.AtomicQueue(RouterIdMessage).init(allocator),
             .callback_map = std.AutoHashMap(i64, CallbackType).init(allocator),
