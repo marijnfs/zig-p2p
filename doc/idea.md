@@ -10,7 +10,7 @@ Chat:
     - Base key: Using key based merkle-tree derivate to generate sub-keys. You probably don't want to use basekey anywhere, apps only see sub-key.
     
 # Fiction
-    - Flash Fiction board. Simple message board, with pe rsonal ratings. How to keep privacy (you assert you give this part to openness.
+    - Flash Fiction board. Simple message board, with personal ratings. How to keep privacy (you assert you give this part to openness.
     - Program has subtree key, but public part has a subtree of that. Continuously updates by hashing key continuously. Just keep a number that increments (forward safety) as part of the hash-input. 
     - Should define standard _public_ protocol, with forward secrecy keys. In the end though we need ratings, that need a base-trustee to give trust to ratings. Passing on trust to sub-entities would still give a path to this entity, unless sub-entities are very well managed as anonymous ghost entitities. Trust could be transfered in a non-trackable mixing style (like lightning), 
     - This could define base of trust-setup. Could all trees and subtrees use base trust 'currency'? Maybe sub-trees need lightning style commitments to keep them off-chain.

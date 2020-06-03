@@ -5,7 +5,7 @@ const default_allocator = p2p.default_allocator;
 const time = std.time;
 
 const Alarm = struct {
-    duration: u64, t: u64, callback: fn () void
+    duration: i64, t: i64, callback: fn () void
 };
 
 pub const Timer = struct {
@@ -23,7 +23,7 @@ pub const Timer = struct {
         alarm.deinit();
     }
 
-    pub fn add_timer(self: *Timer, duration: u64, callback: fn () void) !void {
+    pub fn add_timer(self: *Timer, duration: i64, callback: fn () void) !void {
         const lock = self.mutex.acquire();
         defer lock.release();
         try self.alarms.append(Alarm{ .duration = duration, .t = time.timestamp() + duration, .callback = callback });

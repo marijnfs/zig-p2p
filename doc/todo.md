@@ -4,8 +4,8 @@
 - Multi-user (2+) Messaging
   - Needs rerouting of messages
   - Needs connection management and discovery
-- Make Serialization work for more complex types
 
 
 Done:
 - Direct message sending
+- Make Serialization work for more complex types

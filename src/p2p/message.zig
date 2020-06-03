@@ -48,12 +48,13 @@ pub const Message = struct {
     pub fn get_peer_ip4(self: *Message) [4]u8 {
         var ip: [4]u8 = undefined;
         const fd = c.zmq_msg_get(self.msg, c.ZMQ_SRCFD);
-
+        warn("df: {}", .{fd});
         var addr_in: c.sockaddr_in = undefined;
         var len: c.socklen_t = @sizeOf(c.sockaddr_in);
 
         var result = c.getpeername(fd, @ptrCast([*c]c.sockaddr, &addr_in), &len);
         if (result == -1) {
+            warn("failed to getpeername", .{});
             return ip;
         }
         var ip_int = addr_in.sin_addr.s_addr;
