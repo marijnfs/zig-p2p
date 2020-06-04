@@ -80,4 +80,12 @@ pub const Socket = struct {
             return error.NoMessage;
         return message;
     }
+
+    pub fn monitor(self: *Socket, bind_point: [:0]const u8) !void {
+        var r = c.zmq_socket_monitor(self.socket, bind_point, c.ZMQ_EVENT_CONNECTED);
+        if (r == -1) {
+            warn("Failed to start monitor for sock: {}\n", .{self.socket});
+            return error.MonitorFailed;
+        }
+    }
 };

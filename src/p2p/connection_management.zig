@@ -1,6 +1,6 @@
 const std = @import("std");
 const fmt = std.fmt;
-
+const warn = std.debug.warn;
 const Allocator = std.mem.Allocator;
 
 const p2p = @import("p2p.zig");
@@ -62,9 +62,16 @@ pub const OutgoingConnection = struct {
         try self.event_queue.queue_event(value);
     }
 
-    pub fn start_event_loop(self: *OutgoingConnection) void {
+    pub fn start_event_loop(self: *OutgoingConnection) !void {
         std.debug.warn("Starting connection event queue: {}\n", .{@ptrToInt(&self.event_queue)});
-        self.event_queue.start_event_loop() catch unreachable;
+        try self.event_queue.start_event_loop();
+        try self.start_monitor();
+    }
+
+    pub fn start_monitor(self: *OutgoingConnection) !void {
+        var bind_point = "inproc://testingipc";
+        try self.socket.monitor(bind_point);
+        _ = try p2p.thread_pool.add_thread(self, monitor);
     }
 
     connect_point: Buffer,
@@ -72,6 +79,18 @@ pub const OutgoingConnection = struct {
     socket: *Socket,
     active: bool
 };
+
+pub fn monitor(self: *OutgoingConnection) void {
+    var bind_point = "inproc://testingipc";
+
+    var pair_socket = Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PAIR) catch unreachable;
+    pair_socket.connect(bind_point) catch unreachable;
+
+    while (true) {
+        var msg = pair_socket.recv();
+        warn("Got monitor msg: {}", .{msg});
+    }
+}
 
 pub fn ip4_to_zeromq(ip: [4]u8, port: i64) !Buffer {
     const buf_printed = try fmt.allocPrint(default_allocator, "tcp://{}.{}.{}.{}:{}", .{ ip[0], ip[1], ip[2], ip[3], port });

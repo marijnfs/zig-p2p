@@ -97,7 +97,7 @@ fn add_connection_callback(connection_point: *AddConnectionData) void {
     outgoing_connection.queue_event(event) catch unreachable;
 
     //add connection and start thread
-    outgoing_connection.start_event_loop();
+    outgoing_connection.start_event_loop() catch unreachable;
 
     cm.outgoing_connections.append(outgoing_connection) catch unreachable;
 }
