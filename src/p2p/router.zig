@@ -127,7 +127,8 @@ pub const Router = struct {
                 var id_buffer = try msg_id.get_buffer();
                 defer id_buffer.deinit();
                 warn("msgid: {x}\n", .{id_buffer.span()});
-
+                warn("bla {x}", .{msg_id.get_peer_ip4()});
+    
                 var id: RouteId = id_buffer.span()[0..4].*;
 
                 std.debug.warn("router got msg from id: {x}\n", .{id});

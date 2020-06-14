@@ -88,7 +88,7 @@ const AddConnectionData = Buffer;
 
 fn add_connection_callback(connection_point: *AddConnectionData) void {
     warn("creating connection to {}\n", .{connection_point.span()});
-    var outgoing_connection = cm.OutgoingConnection.init(connection_point.span()) catch return;
+    var outgoing_connection = OutgoingConnection.init(connection_point.span()) catch return;
 
     //Say hello
     var hello_msg = messages.Hello() catch return;

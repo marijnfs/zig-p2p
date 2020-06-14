@@ -17,7 +17,7 @@ pub const deserialize_tagged = serializer.deserialize_tagged;
 pub const AtomicQueue = @import("queue.zig").AtomicQueue;
 pub const event = @import("event.zig");
 pub const proxy = @import("proxy.zig").proxy;
-pub const OutgoingConnection = connection_management.OutgoingConnection;
+pub const OutgoingConnection = @import("outgoing_connection.zig").OutgoingConnection;
 
 pub const Hash = @import("hash.zig").Hash;
 pub const hash = @import("hash.zig").hash;
@@ -34,7 +34,12 @@ pub const c = @import("c.zig").c;
 
 pub const default_allocator = std.heap.page_allocator;
 
+pub var zmq_context: ?*c_void = undefined; //zmq context
+
 pub fn init() void {
+    std.debug.warn("Initializing ZMQ context\n", .{});
+    zmq_context = c.zmq_ctx_new();
+
     thread_pool.init();
     connection_management.init();
 }

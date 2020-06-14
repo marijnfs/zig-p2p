@@ -26,13 +26,13 @@ pub const Timer = struct {
     pub fn add_timer(self: *Timer, duration: i64, callback: fn () void) !void {
         const lock = self.mutex.acquire();
         defer lock.release();
-        try self.alarms.append(Alarm{ .duration = duration, .t = time.timestamp() + duration, .callback = callback });
+    //        try self.alarms.append(Alarm{ .duration = duration, .t = time.timestamp() + duration, .callback = callback });
     }
 
     fn process_timer(self: *Timer) void {
         var current = time.milliTimestamp();
         for (self.alarms.span()) |*alarm| {
-            alarm.t = current + alarm.duration;
+//            alarm.t = current + alarm.duration;
         }
 
         while (true) {
@@ -44,7 +44,7 @@ pub const Timer = struct {
                 if (alarm.t < current) {
                     alarm.callback();
                     current = time.milliTimestamp();
-                    alarm.t = current + alarm.duration;
+//                    alarm.t = current + alarm.duration;
                 }
             }
             std.time.sleep(10000000);

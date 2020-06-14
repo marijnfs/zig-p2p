@@ -1,15 +1,18 @@
 const std = @import("std");
 const p2p = @import("p2p.zig");
-const warn = std.debug.warn;
+const c = p2p.c;
+
+const default_allocator = p2p.default_allocator;
+const zmq_context = p2p.zmq_context;
 
 const Message = @import("message.zig").Message;
 
 const testing = std.testing;
 const mem = std.mem;
+const warn = std.debug.warn;
 const Allocator = mem.Allocator;
-const default_allocator = p2p.default_allocator;
 
-const c = p2p.c;
+
 
 var prng = std.rand.DefaultPrng.init(42);
 
@@ -18,11 +21,11 @@ pub const Socket = struct {
     socket: ?*c_void,
     uuid: u64,
 
-    pub fn init(context: ?*c_void, socket_type_: c_int) !*Socket {
+    pub fn init(socket_type_: c_int) !*Socket {
         var sock = try default_allocator.create(Socket);
         sock.* = Socket{
             .socket_type = socket_type_,
-            .socket = c.zmq_socket(context, socket_type_),
+            .socket = c.zmq_socket(zmq_context, socket_type_),
             .uuid = prng.random.int(u64),
         };
         return sock;
@@ -81,7 +84,7 @@ pub const Socket = struct {
         return message;
     }
 
-    pub fn monitor(self: *Socket, bind_point: [:0]const u8) !void {
+    pub fn start_zmq_monitor(self: *Socket, bind_point: [:0]const u8) !void {
         var r = c.zmq_socket_monitor(self.socket, bind_point, c.ZMQ_EVENT_CONNECTED);
         if (r == -1) {
             warn("Failed to start monitor for sock: {}\n", .{self.socket});
