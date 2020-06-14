@@ -5,11 +5,12 @@ const Allocator = std.mem.Allocator;
 
 const p2p = @import("p2p.zig");
 const Socket = p2p.Socket;
+const OutgoingConnection = p2p.OutgoingConnection;
 const Message = p2p.Message;
 const Chat = p2p.Chat;
 var default_allocator = p2p.default_allocator;
 
-const Buffer = std.ArrayListSentineled(u8, 0);
+const Buffer = p2p.Buffer;
 
 pub var outgoing_connections: std.ArrayList(*OutgoingConnection) = undefined;
 pub var mutex: std.Mutex = undefined;

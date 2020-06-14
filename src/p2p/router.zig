@@ -84,11 +84,11 @@ pub const Router = struct {
 
         //create sockets
         warn("binding router to {}\n", .{self.bind_point.span()});
-        self.socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
+        self.socket = try p2p.Socket.init(p2p.c.ZMQ_ROUTER);
         try self.socket.bind(self.bind_point.span());
 
         //Setup internal passthrough socket from writer to here
-        var read_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PULL);
+        var read_socket = try p2p.Socket.init(p2p.c.ZMQ_PULL);
         try read_socket.bind(self.pull_bind_point.span());
 
         var poll_items: [2]c.zmq_pollitem_t = undefined;
@@ -128,7 +128,7 @@ pub const Router = struct {
                 defer id_buffer.deinit();
                 warn("msgid: {x}\n", .{id_buffer.span()});
                 warn("bla {x}", .{msg_id.get_peer_ip4()});
-    
+
                 var id: RouteId = id_buffer.span()[0..4].*;
 
                 std.debug.warn("router got msg from id: {x}\n", .{id});
@@ -182,7 +182,7 @@ pub const Router = struct {
     fn router_writer(self: *Router) !void {
         std.debug.warn("start router writer\n", .{});
 
-        var write_socket = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PUSH);
+        var write_socket = try p2p.Socket.init(p2p.c.ZMQ_PUSH);
         try write_socket.connect(self.pull_bind_point.span());
 
         while (true) {

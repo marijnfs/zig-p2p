@@ -8,11 +8,11 @@ const pool = p2p.pool;
 const Socket = p2p.Socket;
 const Message = p2p.Message;
 const cm = p2p.connection_management;
-
+const OutgoingConnection = p2p.OutgoingConnection;
 const messages = chat.messages;
 
 const Allocator = std.mem.Allocator;
-const default_allocator = std.heap.page_allocator;
+const default_allocator = p2p.default_allocator;
 const Buffer = p2p.Buffer;
 const warn = std.debug.warn;
 

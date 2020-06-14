@@ -31,8 +31,8 @@ pub fn init() !void {
 }
 
 pub fn reader(context: void) !void {
-    var pull_sock = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PULL);
-    var router_sock = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_ROUTER);
+    var pull_sock = try p2p.Socket.init(p2p.c.ZMQ_PULL);
+    var router_sock = try p2p.Socket.init(p2p.c.ZMQ_ROUTER);
 
     try pull_sock.bind("ipc:///tmp/pull");
     try router_sock.bind("ipc:///tmp/router");
@@ -56,7 +56,6 @@ pub fn reader(context: void) !void {
 
         if (poll_items[0].revents != 0) {
             warn("got from pull\n", .{});
-
         }
         if (poll_items[1].revents != 0) {
             warn("got from router\n", .{});
@@ -66,16 +65,13 @@ pub fn reader(context: void) !void {
             defer id.deinit();
             defer delim.deinit();
             defer payload.deinit();
-
-            
-               
         }
         std.time.sleep(100000000);
     }
 }
 
 pub fn writer(context: void) !void {
-    var push_sock = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PUSH);
+    var push_sock = try p2p.Socket.init(p2p.c.ZMQ_PUSH);
     try push_sock.connect("ipc:///tmp/pull");
 
     while (true) {
@@ -86,7 +82,7 @@ pub fn writer(context: void) !void {
 }
 
 pub fn requester(context: void) !void {
-    var req_sock = try p2p.Socket.init(p2p.connection_management.context, p2p.c.ZMQ_REQ);
+    var req_sock = try p2p.Socket.init(p2p.c.ZMQ_REQ);
     try req_sock.connect("ipc:///tmp/router");
 
     while (true) {

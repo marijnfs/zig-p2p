@@ -1,4 +1,11 @@
+const std = @import("std");
+const warn = std.debug.warn;
 
+const p2p = @import("p2p.zig");
+const Socket = p2p.Socket;
+const Buffer = p2p.Buffer;
+const default_allocator = p2p.default_allocator;
+const c = p2p.c;
 
 pub const OutgoingConnection = struct {
     const Self = @This();
@@ -56,18 +63,18 @@ pub const OutgoingConnection = struct {
 pub fn monitor_reader(self: *OutgoingConnection) void {
     var bind_point = "inproc://testingipc";
     warn("Monitor Reader\n", .{});
-    var pair_socket = Socket.init(p2p.connection_management.context, p2p.c.ZMQ_PAIR) catch unreachable;
+    var pair_socket = Socket.init(p2p.c.ZMQ_PAIR) catch unreachable;
     pair_socket.connect(bind_point) catch unreachable;
 
-     warn("Monitor Reader\n", .{});
-     while (true) {
+    warn("Monitor Reader\n", .{});
+    while (true) {
         var msg = pair_socket.recv() catch unreachable;
         warn("Got monitor msg: {}\n", .{msg});
 
         var buf = msg.get_buffer() catch unreachable;
         defer buf.deinit();
-    
+
         warn("Buf {x}\n", .{buf});
     }
-     warn("End monitor\n", .{});
+    warn("End monitor\n", .{});
 }

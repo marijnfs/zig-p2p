@@ -3,7 +3,6 @@ const p2p = @import("p2p.zig");
 const c = p2p.c;
 
 const default_allocator = p2p.default_allocator;
-const zmq_context = p2p.zmq_context;
 
 const Message = @import("message.zig").Message;
 
@@ -11,8 +10,6 @@ const testing = std.testing;
 const mem = std.mem;
 const warn = std.debug.warn;
 const Allocator = mem.Allocator;
-
-
 
 var prng = std.rand.DefaultPrng.init(42);
 
@@ -25,7 +22,7 @@ pub const Socket = struct {
         var sock = try default_allocator.create(Socket);
         sock.* = Socket{
             .socket_type = socket_type_,
-            .socket = c.zmq_socket(zmq_context, socket_type_),
+            .socket = c.zmq_socket(p2p.zmq_context, socket_type_),
             .uuid = prng.random.int(u64),
         };
         return sock;
