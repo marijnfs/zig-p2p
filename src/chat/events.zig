@@ -78,7 +78,7 @@ pub fn check_message_callback(chat_message: *chat.ChatMessage) void {
     for (cm.outgoing_connections.items) |con| {
         warn("adding announce chat to connection {}\n", .{con.connect_point.span()});
         var chat_buffer = messages.AnnounceChat(chat_message) catch continue;
-        var chat_event = Events.SendChat.init(default_allocator, .{ .socket = con.socket, .buffer = chat_buffer }) catch unreachable;
+        var chat_event = Events.SendChat.create(.{ .socket = con.socket, .buffer = chat_buffer }) catch unreachable;
 
         con.queue_event(chat_event) catch continue;
     }
@@ -92,7 +92,7 @@ fn add_connection_callback(connection_point: *AddConnectionData) void {
 
     //Say hello
     var hello_msg = messages.Hello() catch return;
-    var event = Events.SayHello.init(default_allocator, .{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
+    var event = Events.SayHello.create(.{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
 
     outgoing_connection.queue_event(event) catch unreachable;
 

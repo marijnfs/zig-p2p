@@ -64,7 +64,7 @@ pub fn main() anyerror!void {
 
     // Add connections provided are arguments
     for (argv[3..]) |connect_point_arg| {
-        var event = try chat.Events.AddConnection.init(default_allocator, Buffer.init(default_allocator, mem.spanZ(connect_point_arg)) catch unreachable);
+        var event = try chat.Events.AddConnection.create(Buffer.init(default_allocator, mem.spanZ(connect_point_arg)) catch unreachable);
         try chat.main_event_queue.queue_event(event);
     }
 

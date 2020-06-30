@@ -65,11 +65,11 @@ pub const Router = struct {
         self.allocator.free(self);
     }
 
-    pub fn add_route(self: *Router, tag: i64, comptime T: type, comptime callback: fn (T, RouteId, *p2p.Message) void) !void {
+    pub fn add_route(self: *Router, tag: i64, comptime T: type, comptime callback: fn (T, RouteId, *p2p.Message) anyerror!void) !void {
         const bla = struct {
             fn f(deserializer: *DeserializerTagged, id: RouteId, id_message: *p2p.Message) void {
                 var value = deserializer.deserialize(T) catch unreachable;
-                callback(value, id, id_message);
+                callback(value, id, id_message) catch unreachable;
             }
         }.f;
         _ = try self.callback_map.put(tag, bla);

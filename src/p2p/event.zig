@@ -3,6 +3,7 @@ const p2p = @import("p2p.zig");
 
 const mem = std.mem;
 const Allocator = mem.Allocator;
+const default_allocator = p2p.default_allocator;
 
 // Default Event.
 // Events should embed this and link the function pointers deinit_fn and process_fn to their deinit and process functions.
@@ -45,9 +46,6 @@ pub const EventQueue = struct {
 
     //Main worker function, grabbing work items and processing them
     pub fn event_processor(event_queue: *EventQueue) void {
-        //     std.debug.warn("event processor: {}\n", .{@ptrToInt(event_queue)});
-        //     std.debug.warn("--: {}\n", .{@ptrToInt(&event_queue.queue)});
-        //     std.debug.warn("--: {}\n", .{event_queue});
         std.debug.warn("start processor {}\n", .{@ptrToInt(event_queue)});
 
         while (true) {
@@ -65,9 +63,6 @@ pub const EventQueue = struct {
     }
 
     pub fn start_event_loop(self: *EventQueue) !void {
-        // std.debug.warn("start event processor: {}\n", .{@ptrToInt(self)});
-        // std.debug.warn("--: {}\n", .{@ptrToInt(&self.queue)});
-        // std.debug.warn("--: {}\n", .{self});
         std.debug.warn("start event loop {}\n", .{@ptrToInt(self)});
 
         self.thread = try p2p.thread_pool.add_thread(self, EventQueue.event_processor);
@@ -87,16 +82,16 @@ pub fn make_event(comptime EventType: type, event_function: fn (data: *EventType
         event_data: EventType,
         event: Event,
 
-        pub fn init(allocator: *Allocator, event_data: EventType) !*Self {
-            var event_type = try allocator.create(Self);
-            event_type.event_data = event_data;
-            event_type.event = .{
+        pub fn create(event_data: EventType) !*Self {
+            var event = try default_allocator.create(Self);
+            event.event_data = event_data;
+            event.event = .{
                 .process_fn = process,
                 .deinit_fn = deinit,
                 .free_fn = free,
             };
 
-            return event_type;
+            return event;
         }
 
         pub fn free(event: *Event, allocator: *Allocator) void {

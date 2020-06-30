@@ -10,7 +10,7 @@ const AddKnownAddress = chat.events.Events.AddKnownAddress;
 const RouterReply = chat.events.Events.RouterReply;
 const Buffer = p2p.Buffer;
 
-pub fn greet_callback(val: void, id: p2p.router.RouteId, id_msg: *p2p.Message) void {
+pub fn greet_callback(val: void, id: p2p.router.RouteId, id_msg: *p2p.Message) anyerror!void {
     std.debug.warn("Greet callback\n", .{});
 
     var ip = id_msg.get_peer_ip4();
@@ -23,6 +23,6 @@ pub fn greet_callback(val: void, id: p2p.router.RouteId, id_msg: *p2p.Message) v
     // }) catch return;
     // chat.main_event_queue.queue_event(router_event) catch return;
 
-    var event = AddKnownAddress.init(default_allocator, ip_buffer) catch return;
+    var event = AddKnownAddress.create(ip_buffer) catch return;
     chat.main_event_queue.queue_event(event) catch return;
 }

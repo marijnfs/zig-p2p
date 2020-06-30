@@ -9,7 +9,7 @@ const Buffer = p2p.Buffer;
 
 // On receiving a Hello messsage
 
-pub fn incoming_chat_callback(chat_message: chat.ChatMessage, id: p2p.router.RouteId, id_msg: *p2p.Message) void {
+pub fn incoming_chat_callback(chat_message: chat.ChatMessage, id: p2p.router.RouteId, id_msg: *p2p.Message) anyerror!void {
     std.debug.warn("got chat: {}\n", .{chat_message});
 
     // var thanks = std.mem.dupe(default_allocator, u8, "got message") catch return;
@@ -19,6 +19,6 @@ pub fn incoming_chat_callback(chat_message: chat.ChatMessage, id: p2p.router.Rou
     // }) catch return;
 
     // chat.main_event_queue.queue_event(router_event) catch return;
-    var check_message = CheckMessage.init(default_allocator, chat_message) catch unreachable;
-    chat.main_event_queue.queue_event(check_message) catch unreachable;
+    var check_message = try CheckMessage.create(chat_message);
+    try chat.main_event_queue.queue_event(check_message);
 }
