@@ -16,8 +16,8 @@ pub const Event = struct {
         event.deinit_fn(event);
     }
 
-    pub fn process(event: *Event) void {
-        event.process_fn(event);
+    pub fn process(event: *Event) anyerror!void {
+        try event.process_fn(event);
     }
 
     pub fn free(event: *Event) void {
@@ -25,7 +25,7 @@ pub const Event = struct {
     }
 
     deinit_fn: fn (event: *Event) void,
-    process_fn: fn (event: *Event) void,
+    process_fn: fn (event: *Event) anyerror!void,
     free_fn: fn (event: *Event, allocator: *Allocator) void
 };
 
@@ -58,7 +58,7 @@ pub const EventQueue = struct {
             var event = event_queue.queue.pop() catch unreachable;
             defer event.deinit();
 
-            event.process();
+            event.process() catch unreachable;
         }
     }
 
@@ -76,7 +76,7 @@ pub const EventQueue = struct {
     }
 };
 
-pub fn make_event(comptime EventType: type, event_function: fn (data: *EventType) void) type {
+pub fn make_event(comptime EventType: type, event_function: fn (data: *EventType) anyerror!void) type {
     return struct {
         const Self = @This();
         event_data: EventType,
@@ -105,9 +105,9 @@ pub fn make_event(comptime EventType: type, event_function: fn (data: *EventType
                 self.event_data.deinit();
         }
 
-        pub fn process(event: *Event) void {
+        pub fn process(event: *Event) anyerror!void {
             const self = @fieldParentPtr(Self, "event", event);
-            event_function(&self.event_data);
+            try event_function(&self.event_data);
         }
     };
 }

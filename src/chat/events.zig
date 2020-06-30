@@ -42,33 +42,33 @@ const SendMessageData = struct {
     }
 };
 
-pub fn say_hello_callback(message_data: *SendMessageData) void {
-    var msg = Message.init_slice(message_data.buffer.span()) catch return;
+pub fn say_hello_callback(message_data: *SendMessageData) anyerror!void {
+    var msg = try Message.init_slice(message_data.buffer.span());
     defer msg.deinit();
 
     warn("sending msg, sock: {}\n", .{message_data.socket});
     var rc = message_data.socket.send(&msg);
 }
 
-pub fn send_chat_callback(message_data: *SendMessageData) void {
+pub fn send_chat_callback(message_data: *SendMessageData) anyerror!void {
     warn("Sending chat\n", .{});
-    var msg = Message.init_slice(message_data.buffer.span()) catch return;
+    var msg = try Message.init_slice(message_data.buffer.span());
     defer msg.deinit();
 
     var rc = message_data.socket.send(&msg);
 }
 
-pub fn router_reply_callback(id_message: *RouterIdMessage) void {
+pub fn router_reply_callback(id_message: *RouterIdMessage) anyerror!void {
     warn("Router reply to {x} :{}\n", .{ id_message.id, id_message.buffer.span() });
-    chat.router.?.queue_message(id_message.*) catch unreachable;
+    try chat.router.?.queue_message(id_message.*);
 }
 
-pub fn check_message_callback(chat_message: *chat.ChatMessage) void {
+pub fn check_message_callback(chat_message: *chat.ChatMessage) anyerror!void {
     const held = cm.mutex.acquire();
     defer held.release();
 
-    var H = p2p.hash(chat_message.*) catch unreachable;
-    var optional_kv = chat.sent_map.put(H, true) catch unreachable;
+    var H = try p2p.hash(chat_message.*);
+    var optional_kv = try chat.sent_map.put(H, true);
     if (optional_kv) |kv| {
         return;
     }
@@ -77,8 +77,8 @@ pub fn check_message_callback(chat_message: *chat.ChatMessage) void {
 
     for (cm.outgoing_connections.items) |con| {
         warn("adding announce chat to connection {}\n", .{con.connect_point.span()});
-        var chat_buffer = messages.AnnounceChat(chat_message) catch continue;
-        var chat_event = Events.SendChat.create(.{ .socket = con.socket, .buffer = chat_buffer }) catch unreachable;
+        var chat_buffer = try messages.AnnounceChat(chat_message);
+        var chat_event = try Events.SendChat.create(.{ .socket = con.socket, .buffer = chat_buffer });
 
         con.queue_event(chat_event) catch continue;
     }
@@ -86,30 +86,30 @@ pub fn check_message_callback(chat_message: *chat.ChatMessage) void {
 
 const AddConnectionData = Buffer;
 
-fn add_connection_callback(connection_point: *AddConnectionData) void {
+fn add_connection_callback(connection_point: *AddConnectionData) anyerror!void {
     warn("creating connection to {}\n", .{connection_point.span()});
-    var outgoing_connection = OutgoingConnection.init(connection_point.span()) catch return;
+    var outgoing_connection = try OutgoingConnection.init(connection_point.span());
 
     //Say hello
-    var hello_msg = messages.Hello() catch return;
-    var event = Events.SayHello.create(.{ .socket = outgoing_connection.socket, .buffer = hello_msg }) catch unreachable;
+    var hello_msg = try messages.Hello();
+    var event = try Events.SayHello.create(.{ .socket = outgoing_connection.socket, .buffer = hello_msg });
 
-    outgoing_connection.queue_event(event) catch unreachable;
+    try outgoing_connection.queue_event(event);
 
     //add connection and start thread
-    outgoing_connection.start_event_loop() catch unreachable;
+    try outgoing_connection.start_event_loop();
 
-    cm.outgoing_connections.append(outgoing_connection) catch unreachable;
+    try cm.outgoing_connections.append(outgoing_connection);
 }
 
 const AddKnownAddressData = Buffer;
-fn add_known_address_callback(conn_data: *AddKnownAddressData) void {
+fn add_known_address_callback(conn_data: *AddKnownAddressData) !void {
     for (cm.known_addresses.span()) |addr| {
         if (std.mem.eql(u8, addr.span(), conn_data.span()))
             return;
     }
     warn("Adding: {s}\n", .{conn_data.span()});
-    cm.known_addresses.append(Buffer.initFromBuffer(conn_data.*) catch unreachable) catch unreachable;
+    try cm.known_addresses.append(try Buffer.initFromBuffer(conn_data.*));
 }
 
 pub fn check_connection_callback(data: *void) void {
