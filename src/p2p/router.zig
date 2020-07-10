@@ -153,7 +153,7 @@ pub const Router = struct {
                 var tag = try deserializer.tag();
                 var callback_kv = self.callback_map.get(tag);
                 if (callback_kv != null) {
-                    callback_kv.?.value(&deserializer, id, &msg_id);
+                    callback_kv.?(&deserializer, id, &msg_id);
                 } else {
                     std.debug.warn("False tag: {}\n", .{tag});
                     // reply that this tag is unknown

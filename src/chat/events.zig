@@ -68,8 +68,8 @@ pub fn check_message_callback(chat_message: *chat.ChatMessage) anyerror!void {
     defer held.release();
 
     var H = try p2p.hash(chat_message.*);
-    var optional_kv = try chat.sent_map.put(H, true);
-    if (optional_kv) |kv| {
+    var optional_kv = try chat.sent_map.getOrPut(H);
+    if (optional_kv.found_existing) {
         return;
     }
 
