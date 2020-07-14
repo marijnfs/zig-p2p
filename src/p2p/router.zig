@@ -122,12 +122,12 @@ pub const Router = struct {
 
             if (poll_items[1].revents != 0) { // Router socket
                 std.debug.warn("got Router socket\n", .{});
+
                 var msg_id = try self.socket.recv();
                 defer msg_id.deinit();
+
                 var id_buffer = try msg_id.get_buffer();
                 defer id_buffer.deinit();
-                warn("msgid: {x}\n", .{id_buffer.span()});
-                warn("bla {x}", .{msg_id.get_peer_ip4()});
 
                 var id: RouteId = id_buffer.span()[0..4].*;
 
@@ -144,6 +144,7 @@ pub const Router = struct {
                 // setup deserializer for package
                 var buffer = try msg_payload.get_buffer();
                 defer buffer.deinit();
+
                 warn("router got payload from id: {x}\n", .{buffer.span()});
 
                 //Deserialize the payload

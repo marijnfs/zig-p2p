@@ -15,7 +15,7 @@ pub const ThreadError = error {
     Fail,
 };
 
-pub fn add_thread(context: var, comptime startFn: var) !*std.Thread {
+pub fn add_thread(context: anytype, comptime startFn: anytype) !*std.Thread {
     const held = mutex.acquire();
     defer held.release();
 

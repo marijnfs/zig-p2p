@@ -7,7 +7,7 @@ const p2p = @import("p2p.zig");
 const default_allocator = p2p.default_allocator;
 const Buffer = p2p.Buffer;
 
-pub fn serialize(value: var) !Buffer {
+pub fn serialize(value: anytype) !Buffer {
     var buffer = try Buffer.initSize(default_allocator, 0);
     var stream = buffer.outStream();
     var serializer = serializer_allocate(.Little, .Byte, stream);
@@ -23,7 +23,7 @@ pub fn deserialize(comptime Type: type, buffer: []u8, allocator: *std.mem.Alloca
     return obj;
 }
 
-pub fn serialize_tagged(tag: i64, value: var) !Buffer {
+pub fn serialize_tagged(tag: i64, value: anytype) !Buffer {
     var buffer = try Buffer.initSize(default_allocator, 0);
     var stream = buffer.outStream();
     var serializer = serializer_allocate(.Little, .Byte, stream);

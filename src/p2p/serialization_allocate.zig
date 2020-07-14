@@ -89,7 +89,7 @@ pub fn DeserializerAllocate(comptime endian: builtin.Endian, comptime packing: P
         }
 
         /// Deserializes data into the type pointed to by `ptr`
-        pub fn deserializeInto(self: *Self, ptr: var) !void {
+        pub fn deserializeInto(self: *Self, ptr: anytype) !void {
             const T = @TypeOf(ptr);
             comptime assert(trait.is(.Pointer)(T));
             comptime assert(trait.isSingleItemPtr(T));
@@ -193,7 +193,7 @@ pub fn DeserializerAllocate(comptime endian: builtin.Endian, comptime packing: P
     };
 }
 
-pub fn deserializer_allocate(comptime endian: builtin.Endian, comptime packing: Packing, in_stream: var, allocator: *std.mem.Allocator) DeserializerAllocate(endian, packing, @TypeOf(in_stream)) {
+pub fn deserializer_allocate(comptime endian: builtin.Endian, comptime packing: Packing, in_stream: anytype, allocator: *std.mem.Allocator) DeserializerAllocate(endian, packing, @TypeOf(in_stream)) {
     return DeserializerAllocate(endian, packing, @TypeOf(in_stream)).init(in_stream, allocator);
 }
 
@@ -231,7 +231,7 @@ pub fn SerializerAllocate(comptime endian: builtin.Endian, comptime packing: Pac
             if (packing == .Bit) return self.out_stream.flushBits();
         }
 
-        pub fn serializeInt(self: *Self, value: var) Error!void {
+        pub fn serializeInt(self: *Self, value: anytype) Error!void {
             const T = @TypeOf(value);
             comptime assert(trait.is(.Int)(T) or trait.is(.Float)(T));
 
@@ -263,7 +263,7 @@ pub fn SerializerAllocate(comptime endian: builtin.Endian, comptime packing: Pac
         }
 
         /// Serializes the passed value into the stream
-        pub fn serialize(self: *Self, value: var) Error!void {
+        pub fn serialize(self: *Self, value: anytype) Error!void {
             const T = comptime @TypeOf(value);
 
             if (comptime trait.is(.Array)(T)) {
@@ -351,7 +351,7 @@ pub fn SerializerAllocate(comptime endian: builtin.Endian, comptime packing: Pac
 pub fn serializer_allocate(
     comptime endian: builtin.Endian,
     comptime packing: Packing,
-    out_stream: var,
+    out_stream: anytype,
 ) SerializerAllocate(endian, packing, @TypeOf(out_stream)) {
     return SerializerAllocate(endian, packing, @TypeOf(out_stream)).init(out_stream);
 }
@@ -467,7 +467,7 @@ test "Serializer/Deserializer Int: Inf/NaN" {
     try testIntSerializerDeserializerInfNaN(.Little, .Bit);
 }
 
-fn testAlternateSerializer(self: var, serializer: var) !void {
+fn testAlternateSerializer(self: anytype, serializer: anytype) !void {
     try serializer.serialize(self.f_f16);
 }
 
@@ -508,7 +508,7 @@ fn testSerializerDeserializer(comptime endian: builtin.Endian, comptime packing:
         f_f16: f16,
         f_unused_u32: u32,
 
-        pub fn deserialize(self: *@This(), deserializer: var) !void {
+        pub fn deserialize(self: *@This(), deserializer: anytype) !void {
             try deserializer.deserializeInto(&self.f_f16);
             self.f_unused_u32 = 47;
         }

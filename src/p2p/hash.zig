@@ -7,7 +7,7 @@ const default_allocator = p2p.default_allocator;
 const c = p2p.c;
 pub const Hash = [32]u8;
 
-pub fn hash(v: var) !Hash {
+pub fn hash(v: anytype) !Hash {
     var buffer = try serialize(v);
     defer buffer.deinit();
     var H = p2p.blake_hash(buffer.span());

@@ -40,7 +40,7 @@ pub const EventQueue = struct {
         };
     }
 
-    pub fn queue_event(self: *EventQueue, value: var) !void {
+    pub fn queue_event(self: *EventQueue, value: anytype) !void {
         try self.queue.push(&value.event);
     }
 

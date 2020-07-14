@@ -36,7 +36,7 @@ pub const OutgoingConnection = struct {
         default_allocator.free(self);
     }
 
-    pub fn queue_event(self: *OutgoingConnection, value: var) !void {
+    pub fn queue_event(self: *OutgoingConnection, value: anytype) !void {
         std.debug.warn("queueing in outgoing connection {}\n", .{value});
         try self.event_queue.queue_event(value);
     }
